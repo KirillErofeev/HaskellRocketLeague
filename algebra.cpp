@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <iostream>
 
+#include <cmath>
+
 #include "model/Ball.h"
 
 #include "Strategy.h"
@@ -24,9 +26,20 @@ const Robot& Algebra::mate(){
 }
 
 
-//CI CIToPlane(Vec p, Vec planeP, Vec normalP){
-//    return CI
-//}
+Prediction Algebra::collideArena(const Ball& b){
+    Prediction p;
+    CI ci = CIToArena(b);
+
+    double penetration = b.radius - ci.distance;
+    if (penetration > 0){
+        p.position = location(b) + (ci.normal * penetration); 
+
+        Vec v = velocity(b);
+    }
+    
+    return p;
+}
+
 
 //Is i'm closer to the ball than my mate
 bool Algebra::isICloserToBall(){
@@ -72,13 +85,13 @@ void Algebra::goDefCenter(){
 //    int ct = game.current_tick / TICK_DT + 1;
 //    int ticksToCt = ct*TICK_DT - game.current_tick;
 //    
-//    //predictions[ct].fPosition = 
+//    //predictions[ct].position = 
 //}
 
 //Prediction predict(const Ball& ball, int ticks){
 //    Prediction p;
 //    
-//    //p.fPosition = 
+//    //p.position = 
 //}
 
 Vec Algebra::predictCurVelByVel(const Vec& curVelocity, const Vec& velocity, int ticks){
@@ -89,7 +102,7 @@ Vec Algebra::predictCurVelByVel(const Vec& curVelocity, const Vec& velocity, int
 
 Vec Algebra::predictPosByVel(const Vec& position, const Vec& velocity, int ticks){
     
-    return velocity*ticks/TICKS_PER_SECOND + position;
+    return (velocity*(ticks/TICKS_PER_SECOND)) + position;
 }
 
 Vec Algebra::chooseVel(Vec curVel, Vec vel, int ticks){
@@ -108,17 +121,17 @@ Vec Algebra::chooseVel(Vec curVel, Vec vel, int ticks){
 //    int ct = game.current_tick / TICK_DT + 1;
 //    int ticksToCt = ct*TICK_DT - game.current_tick;
 //
-//    //predictions[ct].fVelocity = predictCurVelByVel(curVelocity, velocity, ticksToCt);
-//    //predictions[ct].fPosition = 
+//    //predictions[ct].velocity = predictCurVelByVel(curVelocity, velocity, ticksToCt);
+//    //predictions[ct].position = 
 //    //    predictPosByVel(location(me), chooseVel(curVelocity, velocity, ticksToCt), ticksToCt);
 //
 //    //for(int i = 1; i*dt*TICKS_PER_SECOND<=time; ++i){
-//    //    predictions[ct].fVelocity = predictCurVelByVel(predictions[ct+(i-1)*dt].fVelocity, velocity, ticksToCt);
-//    //    predictions[ct + i*dt].fPosition = 
+//    //    predictions[ct].velocity = predictCurVelByVel(predictions[ct+(i-1)*dt].velocity, velocity, ticksToCt);
+//    //    predictions[ct + i*dt].position = 
 //    //        predictPosByVel(
-//    //                predictions[ct+(i-1)*dt].fPosition,
-//    //                chooseVel(predictions[ct+(i-1)*dt].fVelocity, 
-//    //                          predictions[ct+i*dt].fVelocity, dt*TICK_DT),
+//    //                predictions[ct+(i-1)*dt].position,
+//    //                chooseVel(predictions[ct+(i-1)*dt].velocity, 
+//    //                          predictions[ct+i*dt].velocity, dt*TICK_DT),
 //    //                dt*TICK_DT);
 //    //}
 //    
