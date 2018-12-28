@@ -30,7 +30,6 @@ public:
     int fId, sId;
 
     std::vector<Prediction> predictions;
-    std::vector<Prediction> ballPredictions;
 };
 
 #endif

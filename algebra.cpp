@@ -25,16 +25,52 @@ const Robot& Algebra::mate(){
     }
 }
 
+template<>
+Vec location(const Prediction& p){
+    return p.position;
+}
 
-Prediction Algebra::collideArena(const Ball& b){
-    Prediction p;
-    CI ci = CIToArena(b);
+template<>
+Vec velocity(const Prediction& p){
+    return p.velocity;
+}
+
+Prediction& Algebra::move(Prediction& p, const Ball& b, double dt){
+    p.velocity = velocity(p).clamp(MAX_ENTITY_SPEED);   
+    p.position += p.velocity*dt; 
+    p.position.y -= GRAVITY*dt*dt/2;
+    p.velocity.y -= GRAVITY*dt;
+
+    return p;
+}
+
+//Prediction& Algebra::collideArena(Prediction& p, const Ball& b){
+//    CI ci = CIToArena(b);
+//
+//    double penetration = b.radius - ci.distance;
+//    if (penetration > 0){
+//        p.position = location(b) + (ci.normal * penetration); 
+//
+//        double v = velocity(b) * ci.normal;
+//        if (v < 0)
+//            p.velocity = velocity(b) - ci.normal * ((1+rules.BALL_ARENA_E) * v);
+//    }
+//    
+//    return p;
+//}
+
+Prediction& Algebra::collideArena(Prediction& p, const Ball& b){
+    CI ci = CIToArena(p);
 
     double penetration = b.radius - ci.distance;
     if (penetration > 0){
-        p.position = location(b) + (ci.normal * penetration); 
+        p.position = location(p) + (ci.normal * penetration); 
 
-        Vec v = velocity(b);
+        double v = velocity(p) * ci.normal;
+        std::cout << "rules.BALL_ARENA_E" << v << std::endl;
+        std::cout << "rules.BALL_ARENA_E" << velocity(p) << std::endl;
+        if (v < 0)
+            p.velocity = velocity(p) - ci.normal * ((1+rules.BALL_ARENA_E) * v);
     }
     
     return p;
@@ -112,29 +148,33 @@ Vec Algebra::chooseVel(Vec curVel, Vec vel, int ticks){
 
 }
 
-//void Algebra::predict(std::vector<Prediction>& predictions,
-//                      double dt,//is TICK_DT
-//                      double time,
-//                      const Vec& curVelocity,
-//                      const Vec& velocity)
-//{
-//    int ct = game.current_tick / TICK_DT + 1;
-//    int ticksToCt = ct*TICK_DT - game.current_tick;
-//
-//    //predictions[ct].velocity = predictCurVelByVel(curVelocity, velocity, ticksToCt);
-//    //predictions[ct].position = 
-//    //    predictPosByVel(location(me), chooseVel(curVelocity, velocity, ticksToCt), ticksToCt);
-//
-//    //for(int i = 1; i*dt*TICKS_PER_SECOND<=time; ++i){
-//    //    predictions[ct].velocity = predictCurVelByVel(predictions[ct+(i-1)*dt].velocity, velocity, ticksToCt);
-//    //    predictions[ct + i*dt].position = 
-//    //        predictPosByVel(
-//    //                predictions[ct+(i-1)*dt].position,
-//    //                chooseVel(predictions[ct+(i-1)*dt].velocity, 
-//    //                          predictions[ct+i*dt].velocity, dt*TICK_DT),
-//    //                dt*TICK_DT);
-//    //}
-//    
-//    
-//    
-//}
+void Algebra::predictBall(std::vector<Prediction>& predictions,
+                          double dt,//in TICK_DT 
+                          double time)
+{
+    const Ball& b = game.ball;
+    int ct = game.current_tick / TICK_DT + 1;
+    int ticksToCt = ct*TICK_DT - game.current_tick;
+
+    Prediction p;
+    p.position = location(b);
+    p.velocity = velocity(b);
+    move(p, b, dt*TICK_DT/rules.TICKS_PER_SECOND);
+    std::cout << "velocity" << p.velocity << std::endl;
+    collideArena(p, b);
+
+    predictions[ct] = p;
+
+    //for(int i = 1; i*dt*TICKS_PER_SECOND<=time; ++i){
+    //    predictions[ct].velocity = predictCurVelByVel(predictions[ct+(i-1)*dt].velocity, velocity, ticksToCt);
+    //    predictions[ct + i*dt].position = 
+    //        predictPosByVel(
+    //                predictions[ct+(i-1)*dt].position,
+    //                chooseVel(predictions[ct+(i-1)*dt].velocity, 
+    //                          predictions[ct+i*dt].velocity, dt*TICK_DT),
+    //                dt*TICK_DT);
+    //}
+    
+    
+    
+}

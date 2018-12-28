@@ -10,9 +10,6 @@ using namespace model;
 
 MyStrategy::MyStrategy() {
     std::clock_t b = std::clock();
-    isIdAssigned = false;
-    predictions = std::vector<Prediction>(TICKS_PER_SECOND*450/TICK_DT);
-    ballPredictions = std::vector<Prediction>(TICKS_PER_SECOND*450/TICK_DT);
     std::clock_t e = std::clock();
     double t = double(e - b)/CLOCKS_PER_SEC;
     std::cout << t << "s." << std::endl;
@@ -28,41 +25,37 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
     Algebra a(me, rules, game, action);
 
     if (game.current_tick == 1 && isIdAssigned == false){
+        predictions = std::vector<Prediction>(TICKS_PER_SECOND*450/a.TICK_DT);
         fId = me.id;
         sId = a.mate().id;
         isIdAssigned = true;
+        std::cout << "a" << std::endl;
     }
 
-    if (me.id%2 == 0){
-        if (game.current_tick == 1){
-            //a.predict(predictions, 1, 3, velocity(me), a.toBallGroundVector().maximize());
-        }else{
-            //if (game.current_tick % TICK_DT == 0)
-                //std::cout
-                //    << predictions[game.current_tick / TICK_DT].fPosition - location(me) 
-                //    << predictions[game.current_tick / TICK_DT].fPosition - location(me) 
-                //    << predictions[game.current_tick / TICK_DT].fPosition - location(me) 
-                //    << std::endl;
+    if (me.id == fId){
+        //a.goToBall();
+        a.predictBall(predictions, 1, 1.0/59.0);
+        if (game.current_tick > 1){
+            //std::cout << predictions[game.current_tick].position - location(a.game.ball) << std::endl;
+            Vec deltaV = predictions[game.current_tick].velocity - velocity(a.game.ball);
+            //std::cout << deltaV << std::endl;
+            if (deltaV.norm() > 1e-7 && a.game.current_tick > 200){
+                std::cout << "TICK " << a.game.current_tick << std::endl;
+                std::cout << predictions[game.current_tick-1].velocity << std::endl;
+                std::cout << predictions[game.current_tick].velocity << std::endl;
+                std::cout << velocity(a.game.ball) << std::endl;
+            }
+            //std::cout << predictions[game.current_tick].position << std::endl;
+            //std::cout << location(a.game.ball) << std::endl;
+            //std::cout << predictions[game.current_tick].velocity << std::endl;
+            //std::cout << velocity(a.game.ball) << std::endl;
+            //std::cout << std::endl;
         }
-        a.goToBall();
-        if (game.current_tick % 33 == 0)
-            std::cout << touch_normal(me) << std::endl;
-
-        //updateMaxBallV(me, game);
-        //if(game.current_tick % 500 < 200)
-        //    a.goDefCenter();
-        //else
-        //    a.goToBall();
-
-        //if (a.isICloserToBall()){
-        //if (location(me).distanceTo(game.ball) <= 4.5)//3.3 
-        //    a.jump();
-        //updateMaxBallV(me, game);
     }
 
-    std::clock_t e = std::clock();
-    double t = double(e - b)/CLOCKS_PER_SEC;
-    updateMaxActTime(t);
+    //std::clock_t e = std::clock();
+    //double t = double(e - b)/CLOCKS_PER_SEC;
+    //updateMaxActTime(t);
 }
 
 void ballchaseAct(const Robot& me, const Rules& rules, const Game& game, Action& action){

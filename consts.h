@@ -31,5 +31,5 @@ const double  NITRO_RESPAWN_TICKS = 10 * TICKS_PER_SECOND;
 const double  GRAVITY             = 30;
 
 //const int TICK_DT = TICKS_PER_SECOND*0.1;
-const int TICK_DT = 1;
+//const int TICK_DT = 1;
 #endif

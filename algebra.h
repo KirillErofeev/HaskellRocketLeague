@@ -45,6 +45,14 @@ struct Vec3{
     }
 
     template<class T0>
+    Vec3& operator+=(const T0& v) {
+        x += v.x;
+        y += v.y;
+        z += v.z;
+        return *this;
+    }
+
+    template<class T0>
     Vec3 operator+(const T0& v) const{
         return Vec3(x+v.x, y+v.y, z+v.z);
     }
@@ -82,6 +90,14 @@ struct Vec3{
     Vec3 normalize() const{
         return *this / this->norm();
     }
+
+    Vec3 clamp(T max) const{
+        double n = norm();
+        if (n > max)
+            return *this / n * max;
+        return *this;
+
+    }
 };
 
 typedef Vec3<double> Vec;
@@ -118,6 +134,7 @@ struct Prediction{
     Vec position;   
     Vec velocity;   
     double radius;
+    Prediction() : position(Vec()), velocity(Vec()), radius(0){}
 };
 
 template<class T, class D>
@@ -151,6 +168,8 @@ struct Algebra{
     const Game&   game;
           Action& action;
 
+    const int TICK_DT = 1;
+
     Algebra(const Robot& me, const Rules& rules, const Game& game, Action& action);
 
     bool isICloserToBall();
@@ -181,8 +200,7 @@ struct Algebra{
             );
     void predictBall(
             std::vector<Prediction>& ballPredictions, 
-            double dt, double time,
-            const Vec& velocity
+            double dt, double time
             );
 
 
@@ -211,12 +229,12 @@ struct Algebra{
      
     template <class T>
     CI CIToArena(const T& p){
-        bool isXNegative = p.x < 0;    
-        bool isZNegative = p.z < 0;    
+        bool isXNegative = location(p).x < 0;    
+        bool isZNegative = location(p).z < 0;    
     
-        Vec p0 = p;
-        p0.x = std::fabs(p.x);
-        p0.z = std::fabs(p.z);
+        Vec p0 = location(p);
+        p0.x = std::fabs(location(p).x);
+        p0.z = std::fabs(location(p).z);
     
         CI c = CIToArenaQ(p0);
     
@@ -229,6 +247,8 @@ struct Algebra{
     }
     
 Prediction collideArena(const Ball& b);
+Prediction& move(Prediction& p, const Ball& b, double dt);
+Prediction& collideArena(Prediction& p, const Ball& b);
 };
 
 
