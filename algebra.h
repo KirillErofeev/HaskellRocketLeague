@@ -168,7 +168,7 @@ struct Algebra{
     const Game&   game;
           Action& action;
 
-    const int TICK_DT = 1;
+    const double TICK_DT = 0.01;
 
     Algebra(const Robot& me, const Rules& rules, const Game& game, Action& action);
 
@@ -202,11 +202,17 @@ struct Algebra{
             std::vector<Prediction>& ballPredictions, 
             double dt, double time
             );
+    int currentIndex();
 
 
     template <class T>
     CI CIToPlane(const T& p, const Vec& planeP, const Vec& normalP){
         return CI((p-planeP)*normalP, normalP);
+    }
+
+    template <class T>
+    CI CIToInnerSphere(const T& p, const Vec& center, double radius){
+        return CI(raidus - (p - center).norm(), normalP);
     }
     
     template <class T>
@@ -214,6 +220,7 @@ struct Algebra{
         CI c = CIToPlane(p, Vec(), Vec(0,1,0));
         c = std::min(c, CIToPlane(p, Vec(0,rules.arena.height,0) , Vec(0,-1,0)));
         c = std::min(c, CIToPlane(p, Vec(rules.arena.width/2,0,0), Vec(-1,0,0)));
+        //Z
         Vec t = p; t.z=0;
         t -= Vec(rules.arena.goal_width/2 - rules.arena.goal_top_radius, 
                  rules.arena.goal_height  - rules.arena.goal_top_radius, 0);
@@ -222,6 +229,10 @@ struct Algebra{
             (t.x > 0 && t.y > 0 && t.norm() >= 
              rules.arena.goal_top_radius + rules.arena.goal_side_radius))
             c = std::min(c, CIToPlane(p, Vec(0,0,rules.arena.depth/2), Vec(0,0,-1)));
+        //Corner
+        if (p.x > rules.arena.width/2 - rules.arena.corner_radius && 
+            p.z > rules.arena.depth/2 - rules.arena.corner_radius)
+            c = std::min(c, );
     
         return c;
     

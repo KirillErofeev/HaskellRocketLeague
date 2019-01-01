@@ -34,16 +34,18 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
 
     if (me.id == fId){
         //a.goToBall();
-        a.predictBall(predictions, 1, 1.0/59.0);
+        if (a.game.current_tick % TICKS_PER_SECOND == 1)
+            a.predictBall(predictions, 1, 1.0);
+
         if (game.current_tick > 1){
             //std::cout << predictions[game.current_tick].position - location(a.game.ball) << std::endl;
-            Vec deltaV = predictions[game.current_tick].velocity - velocity(a.game.ball);
+            Vec deltaV = predictions[a.currentIndex()].velocity - velocity(a.game.ball);
             //std::cout << deltaV << std::endl;
-            if (deltaV.norm() > 1e-7 && a.game.current_tick > 200){
+            if (deltaV.norm() > 1e-7 ){
                 std::cout << "TICK " << a.game.current_tick << std::endl;
-                std::cout << predictions[game.current_tick-1].velocity << std::endl;
-                std::cout << predictions[game.current_tick].velocity << std::endl;
-                std::cout << velocity(a.game.ball) << std::endl;
+                std::cout << "Pred:" << predictions[a.currentIndex()].position << " " << predictions[a.currentIndex()].velocity << std::endl;
+                std::cout << "Real: " << location(a.game.ball) << " " <<
+                    velocity(a.game.ball) << std::endl;
             }
             //std::cout << predictions[game.current_tick].position << std::endl;
             //std::cout << location(a.game.ball) << std::endl;
