@@ -212,7 +212,12 @@ struct Algebra{
 
     template <class T>
     CI CIToInnerSphere(const T& p, const Vec& center, double radius){
-        return CI(raidus - (p - center).norm(), normalP);
+        return CI(radius - (p - center).norm(), (center - p).normalize());
+    }
+
+    template <class T>
+    CI CIToOuterSphere(const T& p, const Vec& center, double radius){
+        return CI((p - center).norm() - radius , (p - center).normalize());
     }
     
     template <class T>
@@ -227,13 +232,70 @@ struct Algebra{
         if (p.x >= rules.arena.goal_width/2 + rules.arena.goal_side_radius ||
             p.y >= rules.arena.goal_height  + rules.arena.goal_side_radius ||
             (t.x > 0 && t.y > 0 && t.norm() >= 
-             rules.arena.goal_top_radius + rules.arena.goal_side_radius))
+             rules.arena.goal_top_radius + rules.arena.goal_side_radius)){
             c = std::min(c, CIToPlane(p, Vec(0,0,rules.arena.depth/2), Vec(0,0,-1)));
+        }
         //Corner
         if (p.x > rules.arena.width/2 - rules.arena.corner_radius && 
-            p.z > rules.arena.depth/2 - rules.arena.corner_radius)
-            c = std::min(c, );
-    
+            p.z > rules.arena.depth/2 - rules.arena.corner_radius){
+            Vec center = Vec(rules.arena.width/2 - rules.arena.corner_radius,
+                             p.y,
+                             rules.arena.depth/2 - rules.arena.corner_radius); 
+            CI tc = CIToInnerSphere(p, center, rules.arena.corner_radius);
+            c = std::min(c, tc);
+        }
+        ////Goal outer corner
+        if (p.z < rules.arena.depth/2 + rules.arena.goal_side_radius){
+            if (p.x < rules.arena.goal_width/2 + rules.arena.goal_side_radius){
+                Vec center = Vec(rules.arena.goal_width/2 + rules.arena.goal_side_radius,
+                                p.y,
+                                rules.arena.depth/2 + rules.arena.goal_side_radius); 
+                CI tc = CIToInnerSphere(p, center, rules.arena.goal_side_radius);
+                c = std::min(c, tc);                
+            }
+            if (p.y < rules.arena.goal_height + rules.arena.goal_side_radius){
+                Vec center = Vec(p.x,
+                                rules.arena.goal_height + rules.arena.goal_side_radius,
+                                rules.arena.depth/2 + rules.arena.goal_side_radius); 
+                CI tc = CIToInnerSphere(p, center, rules.arena.goal_side_radius);
+                c = std::min(c, tc);                
+            }
+            Vec goalCenter(rules.arena.goal_width/2 - rules.arena.goal_top_radius,
+                              rules.arena.goal_height - rules.arena.goal_top_radius,
+                              0);
+            Vec v = p - goalCenter;
+            v.z = 0;
+            if (v.x > 0 && v.y > 0){
+                Vec goalCenter0 = 
+                        goalCenter + 
+                        (v.normalize() * 
+                        (rules.arena.goal_top_radius + rules.arena.goal_side_radius));
+                CI tc = CIToInnerSphere(p,
+                            Vec(goalCenter0.x, goalCenter0.y, 
+                                rules.arena.depth/2 + rules.arena.goal_side_radius), 
+                                rules.arena.goal_side_radius);
+                c = std::min(c, tc);
+            }
+        }
+        ////Bottom corners (without side Z goal)
+        //if (p.y < rules.arena.bottom_radius){
+        //    if (p.x > rules.arena.width/2 - rules.arena.bottom_radius){
+        //        Vec center = Vec(rules.arena.width/2 - rules.arena.bottom_radius,
+        //                        rules.arena.bottom_radius,
+        //                        p.z); 
+        //        CI tc = CIToInnerSphere(p, center, rules.arena.bottom_radius);
+        //        c = std::min(c, tc);
+        //    }
+        //    if (p.z >  rules.arena.depth/2      - rules.arena.bottom_radius &&//check iT!
+        //        p.x >= rules.arena.goal_width/2 + rules.arena.goal_side_radius){
+        //        Vec center = Vec(p.x,
+        //                        rules.arena.bottom_radius,
+        //                        rules.arena.depth/2 - rules.arena.bottom_radius); 
+        //        CI tc = CIToInnerSphere(p, center, rules.arena.bottom_radius);
+        //        c = std::min(c, tc);
+        //    }
+        //    
+        //}
         return c;
     
     }
