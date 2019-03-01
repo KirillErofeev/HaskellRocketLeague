@@ -33,31 +33,23 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
     }
 
     if (me.id == fId){
-        //a.goToBall();
+        a.goToBall();
+        if (true)
+            a.jump();
+
         if (a.game.current_tick % TICKS_PER_SECOND == 1)
             a.predictBall(predictions, 1, 1.0);
 
         if (game.current_tick > 1){
-            //std::cout << predictions[game.current_tick].position - location(a.game.ball) << std::endl;
             Vec deltaV = predictions[a.currentIndex()].velocity - velocity(a.game.ball);
-            //std::cout << deltaV << std::endl;
             if (deltaV.norm() > 1e-7 ){
                 std::cout << "TICK " << a.game.current_tick << std::endl;
                 std::cout << "Pred:" << predictions[a.currentIndex()].position << " " << predictions[a.currentIndex()].velocity << std::endl;
                 std::cout << "Real: " << location(a.game.ball) << " " <<
                     velocity(a.game.ball) << std::endl;
             }
-            //std::cout << predictions[game.current_tick].position << std::endl;
-            //std::cout << location(a.game.ball) << std::endl;
-            //std::cout << predictions[game.current_tick].velocity << std::endl;
-            //std::cout << velocity(a.game.ball) << std::endl;
-            //std::cout << std::endl;
         }
     }
-
-    //std::clock_t e = std::clock();
-    //double t = double(e - b)/CLOCKS_PER_SEC;
-    //updateMaxActTime(t);
 }
 
 void ballchaseAct(const Robot& me, const Rules& rules, const Game& game, Action& action){
