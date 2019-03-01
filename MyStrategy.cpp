@@ -34,7 +34,7 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
 
     if (me.id == fId){
         a.goToBall();
-        if (true)
+        if (a.distanceToBall(me) > 5)
             a.jump();
 
         if (a.game.current_tick % TICKS_PER_SECOND == 1)
