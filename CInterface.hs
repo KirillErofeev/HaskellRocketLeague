@@ -1,10 +1,7 @@
-module HaskellRL where
-
 import Foreign.Marshal (newArray)
 import Foreign.Ptr (Ptr(..))
 
-import Types
-import Algebra (act)
+import Rules (rTICKS_PER_SECOND)
 
 foreign export ccall haskellAct ::
   --  me.Id  -> me.is_teammate -> me.x   -> me.y   -> me.z
@@ -82,5 +79,3 @@ haskellAct
             eBotVel     = Vec3 eBotVelX eBotVelY eBotVelZ
             eBot0Loc    = Vec3 eBot0X eBot0Y eBot0Z
             eBot0Vel    = Vec3 eBot0VelX eBot0VelY eBot0VelZ
-
-helloFromHaskell = 1111.0
