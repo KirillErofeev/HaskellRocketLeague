@@ -1,3 +1,6 @@
 codeball2018-linux/*
 *.out
 *.bat
+*.o
+*.hi
+*.*.sw*
