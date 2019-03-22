@@ -1,6 +1,6 @@
 GHC_INCLUDE = /usr/lib/ghc/include
 
-all: main; ./a.out
+all: main;
 
 main: HaskellRL.o main.o; \
     ghc -o a.out -no-hs-main *.o -lstdc++
