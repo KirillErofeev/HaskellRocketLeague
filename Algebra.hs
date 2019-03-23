@@ -2,11 +2,12 @@ module Algebra where
 
 import Types
 
-import Debug.Trace (trace, traceShow)
+--import Debug.Trace (traceShow)
+traceShow = flip const
 
 act :: Game -> IPlayer -> EnemyPlayer -> Score -> Action
 act game iAm enemy score = traceShow (location iAm) r where
-    r = hitBall game iAm
+    r = condHitBall game iAm
     t = velocity r
 
 isIAmCloserToBall game iAm 
