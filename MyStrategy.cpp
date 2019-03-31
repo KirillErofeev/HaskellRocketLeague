@@ -13,7 +13,6 @@ using namespace model;
 MyStrategy::MyStrategy() {}
 
 std::string MyStrategy::custom_rendering() {
-    return "";
 }
 
 
@@ -66,67 +65,6 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
     action.target_velocity_z = out[2];
     action.jump_speed        = out[3];
 
-    //std::cout << " x" << out[0]
-    //          << " y" << out[1]
-    //          << " z" << out[2]
-    //          << " j" << out[3]
-    //          << std::endl;
-    //std::clock_t b = std::clock();
-
-    //Algebra a(me, rules, game, action);
-
-    //if (game.current_tick == 1 && isIdAssigned == false){
-    //    predictions = std::vector<Prediction>(TICKS_PER_SECOND*450/a.TICK_DT);
-    //    fId = me.id;
-    //    sId = a.mate().id;
-    //    isIdAssigned = true;
-    //    std::cout << "a" << std::endl;
-    //}
-
-    //if (me.id != fId){
-    //    a.goToBall();
-    //    if (a.distanceToBall(me) < 3.5)
-    //        a.jump();
-    //}
-
-    //if (me.id == fId){
-    //    a.goToBall();
-    //    if (a.distanceToBall(me) < 3.5)
-    //        a.jump();
-
-    //    if (a.game.current_tick % TICKS_PER_SECOND == 1)
-    //        a.predictBall(predictions, 1, 1.0);
-
-    //    if (game.current_tick > 1){
-    //        Vec deltaV = predictions[a.currentIndex()].velocity - velocity(a.game.ball);
-    //        if (deltaV.norm() > 1e-7 ){
-    //            std::cout << velocity(a.game.ball) << std::endl;
-    //        }
-    //    }
-    //}
+    debug = "13233";
 }
-
-//void MyStrategy::updateMaxActTime(double time){
-//    if (time > maxActTime){
-//        maxActTime = time;
-//        //std::cout << time << "s." << std::endl;
-//    }
-//}
-//
-//void MyStrategy::updateMaxBallV(const model::Robot& me, const Game& game){
-//    double v = velocity(game.ball).norm();
-//    //if (v > 40)
-//    //    std::cout << v << std::endl;
-//    if (v > maxBallV){
-//        maxBallV = v;
-//    }
-//}
-
-//void MyStrategy::updateMinBallDistance(const model::Robot& me, const Game& game){
-//    double l = (location(me) - location(game.ball)).norm();
-//    if (l < minBallDistance){
-//        minBallDistance = l;
-//        std::cout << l << std::endl;
-//    }
-//}
 

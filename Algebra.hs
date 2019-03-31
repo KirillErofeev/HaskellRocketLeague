@@ -1,47 +1,64 @@
+{-# language NoMonomorphismRestriction #-}
+{-#language FlexibleContexts #-}
 module Algebra where
 
 import Types
 
---import Debug.Trace (traceShow)
-traceShow = flip const
+import Debug.Trace (traceShow, trace)
+--traceShow = flip const
 
 act :: Game -> IPlayer -> EnemyPlayer -> Score -> Action
-act game iAm enemy score = traceShow (location iAm) r where
-    r = condHitBall game iAm
-    t = velocity r
-
-isIAmCloserToBall game iAm 
-     | myDist > mateDist = True
-     | myDist < mateDist = False
-     | otherwise         = True
+act game iAm enemy score
+    | otherwise        = r
+    | ct `mod` 60 == 0 = trace debugPrint r
         where
-           myDist   = distance (location iAm) (location . ball $ game)
-           mateDist = distance (location (getMate iAm)) (location . ball $ game)
+            r = condHitBall game iAm
+            debugPrint = sec ++ bot ++ is
+            sec = show ct ++ "s "
+            bot = (show $ (botId . getMe) $ iAm) ++ ": "
+            is = show $ isIAmCloserToBall game iAm
+            ct = currentTick game
+
+--isIAmCloserToBall game iAm
+--     | myDist < mateDist = False
+--     | otherwise         = True
+--        where
+--           bl = location . ball $ game
+--           myDist   = distance (location iAm) bl
+--           mateDist = distance (location (getMate iAm)) bl
+
+isIAmCloserToBall game iAm
+    | (botId . getMe) iAm > (botId . getMate) iAm = True
+    | not $ isNotAutogoal (getMate iAm) game      = True
+    | otherwise                                   = False
+        where
+            bl = (location . ball $ game)
 
 goTo iAm point = Action v 0 where
-    v    = 1e3 *| xzPrj (point - location iAm)
+    v = 1e3 *| xzPrj (point - location iAm)
 
 hitBall game iAm = condHitBall game iAm
 
-condHitBall game iAm = Action v jump where
+isNotAutogoal p game = z (bl - location p) >= (-1) where
     bl = (location . ball $ game)
-    distanceToPoint = distance bl (location iAm)
-    isNotAutogoal = foldr (*) 1 ((Vec3 0 0 1) * (bl - location iAm)) >= 0
-    v | isIAmCloserToBall game iAm = vIAmCloser
-      | otherwise                  = velocity $ goTo iAm (Vec3 0 0 (-30))
-    vIAmCloser | distanceToPoint > 6 = velocity $ goTo iAm bl
+
+condHitBall game iAm = action where
+    bl = (location . ball $ game)
+    distanceToBall = distance bl (location iAm)
+    isNotAutogoal = z (bl - location iAm) >= (-1)
+    action | isIAmCloserToBall game iAm = Action vOff jumpOff
+           | otherwise                  = Action vDef jumpDef
+    vDef  = velocity $ goTo iAm defPs
+    defPs = (0.5*|(bl - Vec3 0 0 (-30))) + Vec3 0 0 (-30)
+
+    vOff       | distanceToBall > 6  = velocity $ goTo iAm bl
                | isNotAutogoal       = velocity $ goTo iAm bl
-               | otherwise           = velocity $ goTo iAm (Vec3 15 0 (-40))
+               | otherwise           = velocity $ goTo iAm defPs
 
-    jump | distanceToPoint < 5 && z bl < 2 = 100
-         | distanceToPoint < 4             = 100
-         | otherwise                       = 0
+    jumpDef | distanceToBall < 5 && z bl < 2 && isNotAutogoal = 100
+            | distanceToBall < 4             && isNotAutogoal = 100
+            | otherwise                                       = 0
+    jumpOff | distanceToBall < 4.5 && z bl < 2 && isNotAutogoal = 100
+            | distanceToBall < 4               && isNotAutogoal = 100
+            | otherwise                                         = 0
 
-distance v1 v0 = norm (v0 - v1)
-
-norm v = sqrt $ foldr (+) 0 $ (**2) <$> v
-
-infix 9 *| 
-s *| v = (*s) <$> v
-
-xzPrj v = v * (Vec3 1 0 1)

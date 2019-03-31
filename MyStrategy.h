@@ -28,6 +28,7 @@ public:
     
     bool isIdAssigned;
     int fId, sId;
+    std::string debug;
 
     std::vector<Prediction> predictions;
 };

@@ -162,6 +162,7 @@ struct CollideInformation{
 };
 
 typedef CollideInformation<double, double> CI;
+
 struct Algebra{
     const Robot&  me;
     const Rules&  rules;
