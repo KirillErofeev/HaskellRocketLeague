@@ -7,6 +7,15 @@ import Constants
 clamp v m | norm v > m = (m / norm v) *| v
           | otherwise  = v
 
+collideWithArena e radiusChangeSpeed = (ePos, eVel) where
+    Collide d n = collideArena $ location e
+    penetration = radius e - d
+    ePos | penetration > 0 = location e + (penetration*|n)
+         | otherwise       = location e
+    vel = velocity e `dot` n - radiusChangeSpeed
+    eVel | penetration > 0 && vel < 0 = velocity e - (((1 + arenaE e) *| velocity e) * n)
+         | otherwise                  = velocity e
+
 move e dt = (Vec3 (x locE)   ly (z locE), 
              Vec3 (x clampV) vy (z clampV)) where
     clampV = clamp (velocity e) maxEntitySpeed

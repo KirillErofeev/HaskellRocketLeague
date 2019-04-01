@@ -9,8 +9,8 @@ import Debug.Trace (traceShow, trace)
 
 act :: Game -> IPlayer -> EnemyPlayer -> Score -> Action
 act game iAm enemy score
-    | otherwise        = r
     | ct `mod` 60 == 0 = trace debugPrint r
+    | otherwise        = r
         where
             r = condHitBall game iAm
             debugPrint = sec ++ bot ++ is
@@ -43,11 +43,11 @@ isNotAutogoal p game = z (bl - location p) >= (-1) where
     bl = (location . ball $ game)
 
 condHitBall game iAm = action where
+    action | isIAmCloserToBall game iAm = Action vOff jumpOff
+           | otherwise                  = Action vDef jumpDef
     bl = (location . ball $ game)
     distanceToBall = distance bl (location iAm)
     isNotAutogoal = z (bl - location iAm) >= (-1)
-    action | isIAmCloserToBall game iAm = Action vOff jumpOff
-           | otherwise                  = Action vDef jumpDef
     vDef  = velocity $ goTo iAm defPs
     defPs = (0.5*|(bl - Vec3 0 0 (-30))) + Vec3 0 0 (-30)
 

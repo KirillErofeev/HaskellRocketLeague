@@ -107,6 +107,15 @@ data Bot     = Bot { botId :: Int,      botLoc :: Vec3 Double, botVel :: Vec3 Do
 data Touch  = Touch {isTouch :: Bool,    touchNormal :: Vec3 Double}
 data Ball    = Ball {ballLoc :: Vec3 Double, ballVel :: Vec3 Double, balRadius :: Double}
 
+class Entity a where
+    arenaE :: a -> Double
+
+instance Entity Ball where
+    arenaE b = 0.7 
+
+instance Entity Bot where
+    arenaE b = 0.0 
+
 class MoveAble a where
     velocity :: a -> Vec3 Double
 
