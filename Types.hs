@@ -4,8 +4,12 @@
 module Types where 
 
 import Foreign.Marshal (newArray)
+import Foreign.Ptr (Ptr(..))
 import Data.Semigroup (Semigroup, (<>))
 import Data.Monoid (Sum)
+import Debug.Trace (traceShow)
+
+import Constants
 
 class DoubleLike a where
     toDouble :: a -> Double
@@ -79,7 +83,11 @@ instance Foldable Vec3 where
     foldMap f (Vec3 x y z) = mempty <> f x <> f y <> f z 
         where (<>) = mappend
 
-data Action = Action {actVelocity :: Vec3 Double, jS :: Double} deriving Show
+data Action a = Action {actVelocity :: Vec3 a, jS :: a} deriving Show
+
+instance Foldable Action where
+    foldr f m (Action v jump) = foldr f (jump `f` m) v
+
 
 data Collide = Collide {colDist :: Double, colNormal :: Vec3 Double}
                     deriving (Show)
@@ -90,9 +98,22 @@ instance Eq Collide where
 instance Ord Collide where
     Collide d0 _ <= Collide d1 _ = d0 <= d1
 
-toForeignType (Action (Vec3 x y z) js) = newArray [x, y, z, js]
+class ForeignType a where
+    toForeignType :: a -> IO (Ptr Double)
+
+instance ForeignType (Action Double) where
+    toForeignType (Action (Vec3 x y z) js) = newArray [x, y, z, js]
+    
+instance ForeignType [Double] where
+    toForeignType = newArray
+
+instance (Foldable a, Foldable b) => ForeignType (a Double,b Double) where
+    toForeignType (a,b) = toForeignType $ foldr (:) [] a ++ foldr (:) [] b
+--toForeignType (Action (Vec3 x y z) js,l) = newArray $ [x, y, z, js] ++ l
 
 data Game = Game {ball :: Ball, currentTick :: Int, score :: Score}
+
+setBall (Game b ct score) ball = Game ball ct score
 
 data Score   = Score {myScore :: Int, enemyScore :: Int}
 
@@ -105,7 +126,11 @@ getMate (IPlayer (Player _ mate)) = mate
 data Bot     = Bot { botId :: Int,      botLoc :: Vec3 Double, botVel :: Vec3 Double, botRad :: Double, botTouch :: Touch}
 
 data Touch  = Touch {isTouch :: Bool,    touchNormal :: Vec3 Double}
-data Ball    = Ball {ballLoc :: Vec3 Double, ballVel :: Vec3 Double, balRadius :: Double}
+data Ball    = Ball {ballLoc :: Vec3 Double, ballVel :: Vec3 Double} 
+    deriving (Show, Eq)
+
+mapBall f (Ball l v) = Ball (f <$> l) (f <$> v)
+
 
 class Entity a where
     arenaE :: a -> Double
@@ -123,9 +148,9 @@ instance MoveAble Bot where
     velocity (Bot _ _ v _ _) = v
 
 instance MoveAble Ball where
-    velocity (Ball _ v _) = v
+    velocity (Ball _ v) = v
 
-instance MoveAble Action where
+instance MoveAble (Action Double) where
     velocity = actVelocity
 
 instance MoveAble IPlayer where
@@ -140,9 +165,14 @@ instance Character Bot where
     location (Bot _ l _ _ _) = l
 
 instance Character Ball where
-    radius   (Ball _ _ r) = r
-    location (Ball l _ _) = l
+    radius   (Ball _ _) = ballRadius
+    location (Ball l _) = l
 
 instance Character IPlayer where
     radius   = radius   . getMe
     location = location . getMe
+
+traceShow'  x = uncurry traceShow $ (\a->(a,a)) x
+isNumber x = not $ isNaN x || isInfinite x
+checkNumberTrace x | not . isNumber $ x = traceShow' x 
+                   | otherwise          = x

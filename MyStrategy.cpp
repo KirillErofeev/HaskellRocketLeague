@@ -12,8 +12,7 @@ using namespace model;
 
 MyStrategy::MyStrategy() {}
 
-std::string MyStrategy::custom_rendering() {
-}
+std::string MyStrategy::custom_rendering() { return "";}
 
 
 void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Action& action) {
@@ -60,11 +59,18 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
                 game.current_tick, iAm.score, enemy.score
                 ));
 
+    //std::cout << out[0] << " " <<
+    //             out[1] << " " <<
+    //             out[2] << " " <<
+    //             out[3] << " " << std::endl;
+
+    //std::cout << out[4] << " " <<
+    //             out[5] << " " <<
+    //             out[6] << " " << std::endl;
+
     action.target_velocity_x = out[0];
     action.target_velocity_y = out[1];
     action.target_velocity_z = out[2];
     action.jump_speed        = out[3];
-
-    debug = "13233";
 }
 

@@ -2,6 +2,7 @@ module HaskellRL where
 
 import Foreign.Marshal (newArray)
 import Foreign.Ptr (Ptr(..))
+import Control.Concurrent (threadDelay)
 
 import Types
 import Algebra (act)
@@ -54,9 +55,9 @@ haskellAct
     eBot0Radius eBot0Touch eBot0TnX eBot0TnY eBot0TnZ
     ballX ballY ballZ ballVelX ballVelY ballVelZ ballRadius
     currentTick myScore enemyScore
-        = toForeignType $ act game iAm enemy score where
+        = (toForeignType $ act game iAm enemy score) where
             game        = Game ball currentTick score
-            ball        = Ball ballLoc ballVel ballRadius
+            ball        = Ball ballLoc ballVel
             ballLoc     = Vec3 ballX ballY ballZ
             ballVel     = Vec3 ballVelX ballVelY ballVelZ
             score       = Score myScore enemyScore
@@ -74,10 +75,10 @@ haskellAct
             mateTouchN  = Touch mateTouch  mateTN
             eBotTouchN  = Touch eBotTouch  eBotTN
             eBot0TouchN = Touch eBot0Touch eBot0TN
-            meTN        = Vec3  meTnX meTnY meTnZ
-            mateTN      = Vec3  mateTnX mateTnY mateTnZ
-            eBotTN      = Vec3  eBotTnX eBotTnY eBotTnZ
-            eBot0TN     = Vec3  eBot0TnX eBot0TnY eBot0TnZ
+            meTN        = Vec3 meTnX meTnY meTnZ
+            mateTN      = Vec3 mateTnX mateTnY mateTnZ
+            eBotTN      = Vec3 eBotTnX eBotTnY eBotTnZ
+            eBot0TN     = Vec3 eBot0TnX eBot0TnY eBot0TnZ
             eBotLoc     = Vec3 eBotX eBotY eBotZ
             eBotVel     = Vec3 eBotVelX eBotVelY eBotVelZ
             eBot0Loc    = Vec3 eBot0X eBot0Y eBot0Z

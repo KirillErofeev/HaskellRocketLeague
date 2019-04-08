@@ -3,18 +3,26 @@ module Foretold where
 import Data.Maybe (isJust, fromJust)
 import Types
 import Constants
+import Debug.Trace (traceShow, trace)
 
-clamp v m | norm v > m = (m / norm v) *| v
-          | otherwise  = v
+debugPredict game iAm enemy time dt = trace debugPrint ball' where
+    ball'      = Ball l' v'
+    (l,v)      = move ballNow dt
+    (l',v')    = collideWithArena (Ball l v) 0
+    --debugPrint = show (location ballNow) ++ " " ++ show l
+    debugPrint = show (location ballNow) ++ " " ++ show l
+    ballNow = ball$game
 
-collideWithArena e radiusChangeSpeed = (ePos, eVel) where
-    Collide d n = collideArena $ location e
-    penetration = radius e - d
-    ePos | penetration > 0 = location e + (penetration*|n)
-         | otherwise       = location e
-    vel = velocity e `dot` n - radiusChangeSpeed
-    eVel | penetration > 0 && vel < 0 = velocity e - (((1 + arenaE e) *| velocity e) * n)
-         | otherwise                  = velocity e
+simplePredict game iAm enemy dt = ball' where
+    ball'      = Ball l' v'
+    (l,v)      = move ballNow dt
+    (l',v')    = collideWithArena (Ball l v) 0
+    --debugPrint = show (location ballNow) ++ " " ++ show l
+    ballNow = ball$game
+
+predict :: Game -> IPlayer -> EnemyPlayer -> Double -> Double -> Ball
+predict game iAm enemy time dt = mapBall checkNumberTrace $ snd . head . dropWhile ((<time) . fst) $
+    iterate (\(t,ball) -> (t+dt, simplePredict (setBall game ball) iAm enemy dt)) (0,ball game)
 
 move e dt = (Vec3 (x locE)   ly (z locE), 
              Vec3 (x clampV) vy (z clampV)) where
@@ -23,6 +31,19 @@ move e dt = (Vec3 (x locE)   ly (z locE),
     locE = location e + (dt *| clampV)
     ly = (y locE) - gravity*dt*dt/2
     
+clamp v m | norm v > m = (m / norm v) *| v
+          | otherwise  = v
+
+f g (a,b) = (g a, g b)
+collideWithArena e radiusChangeSpeed = (ePos, eVel) where
+    Collide d n = collideArena $ location e
+    penetration = radius e - d
+    ePos | penetration > 0 = location e + (penetration*|n)
+         | otherwise       = location e
+    vel = velocity e `dot` n - radiusChangeSpeed
+    eVel | vel < 0 = velocity e - (((1 + arenaE e) *| velocity e) * n)
+         | otherwise                  = velocity e
+
 collidePlane point planePoint planeNormal =
     Collide d n where
         d = (point - planePoint) `dot` planeNormal
@@ -45,16 +66,17 @@ collideArena (Vec3 x y z) = collideArenaQ' where
     cor (Vec3 a b c) = Vec3 (signum a * x) b (signum c * z)
 
 collideArenaQ p = 
-    fromJust . foldr1 min . filter isJust . (fmap ($ p)) $ 
+    fromJust . foldr1 min . filter isJust . idMin $ (fmap ($ p)) $ 
         [ground, ceil, sideX, sideZ, corner, 
         goalOuterCorner0, bottomCorner0, ceilingCorner0,
         goalOuterCorner1, bottomCorner1, ceilingCorner1,
         goalOuterCorner2, bottomCorner2, ceilingCorner2,
         bottomCorner3]
+idMin l = (trace $ show $ snd $ foldr1 (\p0@(a,b) p1@(a0,b0) -> if a >= a0 then p1 else p0)  $ zip (l) [0..]) l
 
-ground p  = Just $ collidePlane p zero                   y1
-ceil   p  = Just $ collidePlane p (arenaHeight  *| y1) (-y1)
-sideX  p  = Just $ collidePlane p (arenaWidth/2 *| x1) (-x1)
+ground p  = Just $ collidePlane p     zero                  y1
+ceil   p  = Just $ collidePlane p    (arenaHeight  *| y1) (-y1)
+sideX  p  = Just $ collidePlane p    (arenaWidth/2 *| x1) (-x1)
 sideZ  p | c = Just $ collidePlane p (arenaDepth/2 *| z1) (-z1)
          | True = Nothing where
              c = c0 || c1 || c2
@@ -175,5 +197,3 @@ ceilingCorner2 p | cCorner && ceilingCorner p =
     centerCorner = Vec3 (x o') y' (z o')
     y' = arenaHeight - topRadius
 ceilingCorner2 p | True = Nothing
-
-
