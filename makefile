@@ -10,9 +10,15 @@ endif
 
 rebuild: clean all;
 
+codeball: ; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 helper & (sleep 1 && ./a.out)
+codeballEmpty: ; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty & (sleep 1 && ./a.out)
+codeballEmptyNS: ; ./codeball2018/codeball2018 --noshow --duration 10 --p1 tcp-31003 --p2 empty & (sleep 1 && ./a.out)
+
 test: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 helper & (sleep 1 && ./a.out)
 
-testAgainstEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 1801 & (sleep 1 && ./a.out)
+testEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 3 & (sleep 1 && ./a.out)
+
+testEmptyNS: clean all; ./codeball2018/codeball2018 --noshow --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 800 & (sleep 1 && ./a.out)
 
 testVsKey: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 keyboard --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 1801 & (sleep 1 && ./a.out)
 

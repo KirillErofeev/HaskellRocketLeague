@@ -16,15 +16,20 @@ MyStrategy::MyStrategy() {
 
 std::string MyStrategy::custom_rendering() { return "";}
 
+template<class T>
+void print(T a, int n){
+    for (int i = 0; i < n; ++i)
+        std::cout << a[i] << " ";
+}
 
 void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Action& action) {
-
     if (game.current_tick == 0 && !isStrategyComputed){
         stored = std::vector<double>(100);
         std::cout << "INI" << std::endl;
     }
 
     if (!isStrategyComputed){
+        std::cout << game.current_tick << ": ";
         Player iAm;
         Player enemy;
         for(const auto& p: game.players){
@@ -84,36 +89,44 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
         //             out[6] << " " <<
         //             out[7] << " " << std::endl;
 
-        std::cout << stored[4] - game.ball.x << " " <<
-                     stored[5] - game.ball.y << " " <<
-                     stored[6] - game.ball.z << " " << std::endl;
+        //print(stored.data()+4, 3);
+        //print(stored.data()+7, 3);
+
+        std::cout << 
+                     stored[8]  - game.ball.x << " " <<
+                     stored[9]  - game.ball.y << " " <<
+                     stored[10] - game.ball.z << " " << 
+                     stored[11] - game.ball.velocity_x << " " <<
+                     stored[12] - game.ball.velocity_y << " " <<
+                     stored[13] - game.ball.velocity_z << " " << 
+                     std::endl;
 
         action.target_velocity_x = out[0];
         action.target_velocity_y = out[1];
         action.target_velocity_z = out[2];
         action.jump_speed        = out[3];
 
-        stored[0] = out[4];
-        stored[1] = out[5];
-        stored[2] = out[6];
-        stored[3] = out[7];
+        std::copy(out, out+4+4+6, stored.begin());
 
-        stored[4] = out[8];
-        stored[5] = out[9];
-        stored[6] = out[10];
-        
 
         isStrategyComputed = true;
 
     }
     else{
-        action.target_velocity_x = stored[0];
-        action.target_velocity_y = stored[1];
-        action.target_velocity_z = stored[2];
-        action.jump_speed        = stored[3];
+        action.target_velocity_x = stored[4];
+        action.target_velocity_y = stored[5];
+        action.target_velocity_z = stored[6];
+        action.jump_speed        = stored[7];
         isStrategyComputed = false;
     }
-
+    //print(stored,10);
+    //std::cout << std::endl;
+        //std::cout <<
+        //    action.target_velocity_x << " " <<  
+        //    action.target_velocity_y << " " << 
+        //    action.target_velocity_z << " " << 
+        //    action.jump_speed        << " " << 
+        //    std::endl;
 
 }
 

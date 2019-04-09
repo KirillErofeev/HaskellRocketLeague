@@ -11,10 +11,12 @@ import Debug.Trace (traceShow, trace)
 --traceShow = flip const
 
 act :: Game -> IPlayer -> EnemyPlayer -> Score -> IO Double -> Answer Double
-act game iAm enemy score savedData = 
-    Answer (Move zeroAction zeroAction) (toList predLoc) where
-        predLoc = location $ predict game iAm enemy (1/60) (1/6000)
-        r = condHitBall game iAm enemy
+act game iAm enemy score savedData =
+    Answer (Move zeroAction oneAction) (toList predLoc ++ toList predVel) where
+        Prediction (Game (Ball predLoc predVel) _ _) iAm' enemy' =
+            predict (Prediction game iAm enemy) (1/60) (1/6000)
+        --predVel = velocity $ trace ("BALL AFTER:" ++ show (newBall)) newBall
+        game' = trace ("BALL BEFORE:" ++ show (ball game)) game
         celebrate = zeroAct
     --r = zeroAct
     --debugPrint = show (location ballNow) ++ " " ++ show l
@@ -23,6 +25,7 @@ act game iAm enemy score savedData =
 
 zeroAct = (zeroAction, [])
 zeroAction = Action (Vec3 0 0 0) 0.0
+oneAction  = Action (Vec3 1 4 8) 8.0
 
 --isIAmCloserToBall game iAm
 --     | myDist < mateDist = False
@@ -54,7 +57,7 @@ condHitBall game iAm enemy = action where
            | otherwise = Action vOff jumpOff
     bl = (location . ball $ game)
     predictBall :: Double -> Vec3 Double
-    predictBall time = (location $ predict game iAm enemy time (1/60))
+    predictBall time = undefined
     distanceToBall = distance bl (location iAm)
     isNotAutogoal = z (bl - location iAm) >= (-1)
 

@@ -215,27 +215,32 @@ instance Character IPlayer where
     location = location . getMe
 
 class Character a => PredictableCharacter a where
-    setVelocity :: a -> Vec3 Double -> a
-    setLocation :: a -> Vec3 Double -> a
-    setRadius   :: a -> Double -> a
-    setRadiusChangeSpeed :: a -> Double -> a
+    setVelocity :: Vec3 Double -> a -> a
+    setLocation :: Vec3 Double -> a -> a
+    setRadius   :: Double -> a -> a
+    setRadiusChangeSpeed :: Double -> a -> a
     radiusChangeSpeed :: a -> Double 
 
 instance PredictableCharacter Bot where
-    setVelocity (Bot a b v c d rcs) v' = Bot a b v' c d rcs
-    setLocation (Bot a l v c d rcs) l' = Bot a l' v c d rcs
-    setRadius   (Bot a l v r d rcs) r' = Bot a l v r' d rcs
-    setRadiusChangeSpeed (Bot a l v r d rcs) rcs' =
+    setVelocity v' (Bot a b v c d rcs) = Bot a b v' c d rcs
+    setLocation l' (Bot a l v c d rcs) = Bot a l' v c d rcs
+    setRadius   r' (Bot a l v r d rcs) = Bot a l v r' d rcs
+    setRadiusChangeSpeed rcs' (Bot a l v r d rcs) =
         Bot a l v r d rcs'
     radiusChangeSpeed (Bot _ _ _ _ _ rcs) = rcs
 
 instance PredictableCharacter Ball where
-    setVelocity (Ball l v) v' = Ball l  v'
-    setLocation (Ball l v) l' = Ball l' v
-    setRadius   (Ball l v) r' = Ball l  v
-    setRadiusChangeSpeed = const
+    setVelocity v' (Ball l v) = Ball l  v'
+    setLocation l' (Ball l v) = Ball l' v
+    setRadius   r' (Ball l v) = Ball l  v
+    setRadiusChangeSpeed = flip const
     radiusChangeSpeed b  = 0.0
 
 traceShow'  x = uncurry traceShow $ (\a->(a,a)) x
 checkNumberTrace x | not . isNumber $ x = traceShow' x 
                    | otherwise          = x
+
+data Prediction = Prediction {predGame :: Game, 
+    predIAm :: IPlayer, predEnemy :: EnemyPlayer}
+
+predBall = ball . predGame  

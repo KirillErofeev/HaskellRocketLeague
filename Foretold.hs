@@ -7,32 +7,39 @@ import Debug.Trace (traceShow, trace)
 
 debugPredict game iAm enemy time dt = trace debugPrint ball' where
     ball'      = Ball l' v'
-    (l,v)      = move ballNow dt
+    Ball l v   = move ballNow dt
     (l',v')    = collideWithArena (Ball l v) 0
     --debugPrint = show (location ballNow) ++ " " ++ show l
     debugPrint = show (location ballNow) ++ " " ++ show l
     ballNow = ball$game
 
-simplePredict game iAm enemy dt = ball' where
-    ball'      = Ball l' v'
-    (l,v)      = move ballNow dt
-    (l',v')    = collideWithArena (Ball l v) 0
-    --debugPrint = show (location ballNow) ++ " " ++ show l
-    ballNow = ball$game
+simplePredict (Prediction game iAm enemy) dt = Prediction
+    (setBall game ball') (IPlayer $ Player me mate) (EnemyPlayer $ Player bot0 bot1)
+      where
+        ball'      = Ball l' v'
+        Ball l v   = move ballNow dt
+        (l',v')    = collideWithArena (Ball l v) 0
+        me   = undefined
+        mate = undefined
+        bot0 = undefined
+        bot1 = undefined
+        ballNow = ball$game
 
 simplePredict' game iAm enemy dt 
     | isBug = trace (show ballNow ++ show dt) undefined
     | otherwise = ball' where
         ball'      = Ball l' v'
-        (l,v)      = move ballNow dt
+        Ball l v   = move ballNow dt
         (l',v')    = collideWithArena (Ball l v) 0
         --debugPrint = show (location ballNow) ++ " " ++ show l
         ballNow = ball$game
         isBug = isNumber ballNow && not (isNumber ball')
 
-predict :: Game -> IPlayer -> EnemyPlayer -> Double -> Double -> Ball
-predict game iAm enemy time dt = snd . head . dropWhile ((<time) . fst) $
-    iterate (\(t,ball) -> (t+dt, simplePredict (setBall game ball) iAm enemy dt)) (0,ball game)
+predict :: Prediction -> Double -> Double -> Prediction
+predict p@(Prediction game iAm enemy) time dt = 
+    snd . head . dropWhile ((<time) . fst) $
+    iterate predictIterate (0,p) where 
+        predictIterate (t, prediction) = (t+dt, simplePredict prediction dt)
 
 collideEntities a b = (a', b') where
     dLoc = location b - location a
@@ -43,8 +50,8 @@ collideEntities a b = (a', b') where
     normal = normalize dLoc
     rcs = radiusChangeSpeed
     dVel   = (velocity b - velocity a) `dot` normal - rcs a - rcs b
-    updateLoc sa e = setLocation e (location e + ((sa * penetration * k e)*|normal))
-    updateVel sa e = setVelocity e (velocity e - ((sa * k e)*|impulse))
+    updateLoc sa e=setLocation (location e + ((sa*penetration * k e)*|normal)) e
+    updateVel sa e=setVelocity (velocity e - ((sa * k e)*|impulse)) e
     update sa = updateLoc sa . updateVel sa
     impulse = ((1+meanHitE) * dVel) *| normal
     (a',b') | penetration <= 0 = (a, b)
@@ -60,11 +67,13 @@ move'' e dt | isNumber (location e) && isNumber (radius e) && isNumber dt = move
           | otherwise = trace (show (location e) ++ " " ++ show (radius e) ++ " " ++ show dt) undefined
 
 move0 e dt = trace (show e ++ " " ++ show dt ++" "++ show (move0 e dt)) $ move0 e dt
-move e dt | isInField e = move' e dt
-          | otherwise   = (location e, velocity e)
 
-move' e dt = (Vec3 (x locE)   ly (z locE),
-             Vec3 (x clampV) vy (z clampV)) where
+move e dt | isInField e = move' e dt
+          | otherwise   = e
+
+move' e dt = setLocation l . setVelocity v $ e where
+    l = Vec3 (x locE)   ly (z locE)
+    v = Vec3 (x clampV) vy (z clampV)
     clampV = clamp (velocity e) maxEntitySpeed
     vy = (y clampV) - gravity * dt
     locE = location e + (dt *| clampV)
@@ -79,11 +88,12 @@ collideWithArena e radiusChangeSpeed
     | otherwise =  (ePos, eVel) where
         Collide d n = collideArena $ location e
         penetration = radius e - d
-        ePos | penetration > 0 = location e + (penetration*|n)
-             | otherwise       = location e
+        pCond = penetration > 0
+        ePos | pCond = location e + (penetration*|n)
+             | True  = location e
         vel = velocity e `dot` n - radiusChangeSpeed
-        eVel | vel < 0 = velocity e - (((1 + arenaE e) *| velocity e) * n)
-             | otherwise                  = velocity e
+        eVel | pCond && vel < 0 = velocity e - (((1 + arenaE e) *| velocity e) * n)
+             | otherwise        = velocity e
 
 collideWithArena' e radiusChangeSpeed
     | isNumber (location e) && isNumber (radius e) && isNumber radiusChangeSpeed = r
