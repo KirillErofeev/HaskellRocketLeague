@@ -2,6 +2,7 @@ module HaskellRL where
 
 import Foreign.Marshal (newArray)
 import Foreign.Ptr (Ptr(..))
+import Foreign (peek)
 import Control.Concurrent (threadDelay)
 
 import Types
@@ -37,7 +38,7 @@ foreign export ccall haskellAct ::
   --me.vel_x -> me.vel_y -> me.vel_z -> me.radius
     Double   -> Double   -> Double   -> Double ->
   --current_tick
-    Int -> Int -> Int ->
+    Int -> Int -> Int -> Ptr Double ->
     IO (Ptr Double)
 
 haskellAct
@@ -54,8 +55,9 @@ haskellAct
     eBot0X eBot0Y eBot0Z eBot0VelX eBot0VelY eBot0VelZ
     eBot0Radius eBot0Touch eBot0TnX eBot0TnY eBot0TnZ
     ballX ballY ballZ ballVelX ballVelY ballVelZ ballRadius
-    currentTick myScore enemyScore
-        = (toForeignType $ act game iAm enemy score) where
+    currentTick myScore enemyScore savedData
+        = (toForeignType $ act game iAm enemy score savedData') where
+            savedData'  = peek savedData
             game        = Game ball currentTick score
             ball        = Ball ballLoc ballVel
             ballLoc     = Vec3 ballX ballY ballZ
@@ -67,10 +69,10 @@ haskellAct
             meVel       = Vec3 meVelX meVelY meVelZ
             mateLoc     = Vec3 mateX mateY mateZ
             mateVel     = Vec3 mateVelX mateVelY mateVelZ
-            myBot0      = Bot meId    meLoc    meVel    meRadius    meTouchN
-            myBot1      = Bot mateId  mateLoc  mateVel  mateRadius  mateTouchN
-            eBot0       = Bot eBotId  eBotLoc  eBotVel  eBotRadius  eBotTouchN
-            eBot1       = Bot eBot0Id eBot0Loc eBot0Vel eBot0Radius eBot0TouchN
+            myBot0      = Bot meId    meLoc    meVel    meRadius    meTouchN 0
+            myBot1      = Bot mateId  mateLoc  mateVel  mateRadius  mateTouchN 0
+            eBot0       = Bot eBotId  eBotLoc  eBotVel  eBotRadius  eBotTouchN 0
+            eBot1       = Bot eBot0Id eBot0Loc eBot0Vel eBot0Radius eBot0TouchN 0
             meTouchN    = Touch meTouch    meTN
             mateTouchN  = Touch mateTouch  mateTN
             eBotTouchN  = Touch eBotTouch  eBotTN

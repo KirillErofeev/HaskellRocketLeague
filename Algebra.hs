@@ -5,16 +5,17 @@ module Algebra where
 import Types
 import Foretold
 import Constants
+import Data.Foldable (toList)
 
 import Debug.Trace (traceShow, trace)
 --traceShow = flip const
 
-act :: Game -> IPlayer -> EnemyPlayer -> Score -> (Action Double,[Double])
-act game iAm enemy score | isItGoal game = trace (show (currentTick game) ++ "GOAL") (r,[1,4,88])
-                         | otherwise     = (r,[1,4,88]) where
-    isItGoal (Game b _ _) = (>=39) . abs . z . location $ b
-    r = condHitBall game iAm enemy
-    celebrate = zeroAct
+act :: Game -> IPlayer -> EnemyPlayer -> Score -> IO Double -> Answer Double
+act game iAm enemy score savedData = 
+    Answer (Move zeroAction zeroAction) (toList predLoc) where
+        predLoc = location $ predict game iAm enemy (1/60) (1/6000)
+        r = condHitBall game iAm enemy
+        celebrate = zeroAct
     --r = zeroAct
     --debugPrint = show (location ballNow) ++ " " ++ show l
     --ballNow = ball$game
@@ -53,7 +54,7 @@ condHitBall game iAm enemy = action where
            | otherwise = Action vOff jumpOff
     bl = (location . ball $ game)
     predictBall :: Double -> Vec3 Double
-    predictBall time = (location $ predict game iAm enemy time (1/6000))
+    predictBall time = (location $ predict game iAm enemy time (1/60))
     distanceToBall = distance bl (location iAm)
     isNotAutogoal = z (bl - location iAm) >= (-1)
 

@@ -18,7 +18,11 @@ testVsKey: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 keyboard -
 
 testAgainstEmptyNoShow: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --noshow --duration 1801 & (sleep 1 && ./a.out)
 
-testNoShow: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 helper --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --noshow --duration 1801 & (sleep 1 && ./a.out)
+testNoShow: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 helper --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --noshow --duration 3000 & ((sleep 1 && (./a.out)) )
+
+testNoShowEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --noshow --duration 3000 & ((sleep 1 && (./a.out)) )
+
+run: clean all; ./a.out
 
 all: Haskell.o Runner.o; \
     ghc -O2 -o a.out -no-hs-main *.o -lstdc++

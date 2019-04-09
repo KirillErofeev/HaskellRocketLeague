@@ -1,5 +1,3 @@
-module Test where
+module Main where
 
-t x | x > 7 = 3
-t x | x > 3 = 4
-t x = 1
+main = putStrLn "asdfa"

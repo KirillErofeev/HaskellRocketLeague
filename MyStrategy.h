@@ -31,6 +31,8 @@ public:
     std::string debug;
 
     std::vector<Prediction> predictions;
+    std::vector<double> stored;
+    bool isStrategyComputed;
 };
 
 #endif
