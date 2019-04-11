@@ -90,6 +90,10 @@ instance Foldable Vec3 where
 data Action a = Action {actVelocity :: Vec3 a, jS :: a} 
     deriving (Show, Eq)
 
+zeroAct = (zeroAction, [])
+zeroAction = Action (Vec3 0 0 0) 0.0
+oneAction  = Action (Vec3 1 4 8) 8.0
+
 instance Foldable Action where
     foldr f m (Action v jump) = foldr f (jump `f` m) v
 
@@ -154,14 +158,22 @@ setBall' (Game b ct score) ball | isNumber ball = Game ball ct score
 data Score   = Score {myScore :: Int, enemyScore :: Int}
 
 data Player         = Player {bot0 :: Bot, bot1 :: Bot}
-newtype EnemyPlayer = EnemyPlayer Player
+newtype EnemyPlayer = EnemyPlayer {getEnemyPlayer :: Player}
+getEnemyBot0 = bot0 . getEnemyPlayer
+getEnemyBot1 = bot1 . getEnemyPlayer
 newtype IPlayer     = IPlayer Player
 getMe   (IPlayer (Player me _  )) = me
 getMate (IPlayer (Player _ mate)) = mate
 
-data Bot     = Bot { botId :: Int,      botLoc :: Vec3 Double, botVel :: Vec3 Double, botRad :: Double, botTouch :: Touch, botRadiusChangeSpeed :: Double}
+data Bot = Bot {botId :: Int,      
+                botLoc :: Vec3 Double, 
+                botVel :: Vec3 Double, 
+                botRad :: Double, 
+                botTouch :: Touch, 
+                botRadiusChangeSpeed :: Double,
+                possAct :: Action Double}
 
-data Touch  = Touch {isTouch :: Bool,    touchNormal :: Vec3 Double}
+data Touch  = Touch {isTouch :: Bool, touchNormal :: Vec3 Double}
 data Ball    = Ball {ballLoc :: Vec3 Double, ballVel :: Vec3 Double} 
     deriving (Eq)
 
@@ -187,7 +199,7 @@ class MoveAble a where
     velocity :: a -> Vec3 Double
 
 instance MoveAble Bot where
-    velocity (Bot _ _ v _ _ _) = v
+    velocity (Bot _ _ v _ _ _ _) = v
 
 instance MoveAble Ball where
     velocity (Ball _ v) = v
@@ -203,8 +215,8 @@ class MoveAble a => Character a where
     location :: a -> Vec3 Double
 
 instance Character Bot where
-    radius   (Bot _ _ _ r _ _) = r
-    location (Bot _ l _ _ _ _) = l
+    radius   (Bot _ _ _ r _ _ _) = r
+    location (Bot _ l _ _ _ _ _) = l
 
 instance Character Ball where
     radius   (Ball _ _) = ballRadius
@@ -219,21 +231,24 @@ class Character a => PredictableCharacter a where
     setLocation :: Vec3 Double -> a -> a
     setRadius   :: Double -> a -> a
     setRadiusChangeSpeed :: Double -> a -> a
+    setTouch :: Touch -> a -> a
     radiusChangeSpeed :: a -> Double 
 
 instance PredictableCharacter Bot where
-    setVelocity v' (Bot a b v c d rcs) = Bot a b v' c d rcs
-    setLocation l' (Bot a l v c d rcs) = Bot a l' v c d rcs
-    setRadius   r' (Bot a l v r d rcs) = Bot a l v r' d rcs
-    setRadiusChangeSpeed rcs' (Bot a l v r d rcs) =
-        Bot a l v r d rcs'
-    radiusChangeSpeed (Bot _ _ _ _ _ rcs) = rcs
+    setVelocity v' (Bot a b v c d rcs act) = Bot a b v' c d rcs act 
+    setLocation l' (Bot a l v c d rcs act) = Bot a l' v c d rcs act
+    setRadius   r' (Bot a l v r d rcs act) = Bot a l v r' d rcs act
+    setTouch   t' (Bot a l v r t rcs act)  = Bot a l v r t' rcs act
+    setRadiusChangeSpeed rcs' (Bot a l v r d rcs act) =
+        Bot a l v r d rcs' act
+    radiusChangeSpeed (Bot _ _ _ _ _ rcs _) = rcs
 
 instance PredictableCharacter Ball where
     setVelocity v' (Ball l v) = Ball l  v'
     setLocation l' (Ball l v) = Ball l' v
     setRadius   r' (Ball l v) = Ball l  v
     setRadiusChangeSpeed = flip const
+    setTouch             = flip const 
     radiusChangeSpeed b  = 0.0
 
 traceShow'  x = uncurry traceShow $ (\a->(a,a)) x
@@ -242,5 +257,10 @@ checkNumberTrace x | not . isNumber $ x = traceShow' x
 
 data Prediction = Prediction {predGame :: Game, 
     predIAm :: IPlayer, predEnemy :: EnemyPlayer}
+
+data Proposition = Proposition {proposeMe     :: Action Double, 
+                                proposeMate   :: Action Double,
+                                proposeEnemy0 :: Action Double,
+                                proposeEnemy1 :: Action Double}
 
 predBall = ball . predGame  

@@ -23,9 +23,6 @@ act game iAm enemy score savedData =
     --ballNow = ball$game
     --Ball l b = predict game iAm enemy (1/60) (1/6000)
 
-zeroAct = (zeroAction, [])
-zeroAction = Action (Vec3 0 0 0) 0.0
-oneAction  = Action (Vec3 1 4 8) 8.0
 
 --isIAmCloserToBall game iAm
 --     | myDist < mateDist = False

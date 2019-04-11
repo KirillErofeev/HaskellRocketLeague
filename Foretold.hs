@@ -4,33 +4,72 @@ import Data.Maybe (isJust, fromJust)
 import Types
 import Constants
 import Debug.Trace (traceShow, trace)
+import Data.Foldable (foldl')
+import Test
 
 debugPredict game iAm enemy time dt = trace debugPrint ball' where
-    ball'      = Ball l' v'
-    Ball l v   = move ballNow dt
-    (l',v')    = collideWithArena (Ball l v) 0
+    ball'      = collideWithArena (Ball l v)
+    Ball l v   = move dt ballNow
     --debugPrint = show (location ballNow) ++ " " ++ show l
     debugPrint = show (location ballNow) ++ " " ++ show l
     ballNow = ball$game
 
+botUpdateAction dt bot
+    | notTouch || norm targetVelChange <= 0 = bot
+    | otherwise = setVelocity v bot where
+        notTouch = not . isTouch . botTouch $ bot
+        v = velocity bot + clamp updateVelocity (norm targetVelChange)
+        acceleration = robotAcceleration * max 0 (y tN)
+        updateVelocity = (acceleration * dt) *| normalize targetVelChange
+        targetVelChange = targetVel - velocity bot
+        clampR = clamp (velocity . possAct $ bot) botMaxGroundSpeed
+        tN = touchNormal . botTouch $ bot
+        targetVel = clampR - ((tN `dot` clampR) *| tN)
+
+botUpdateRadius bot = setRadiusChangeSpeed rcs . setRadius r $ bot where
+    r = robotMinRadius + flRadius * jumpSpeed / robotMaxJumpSpeed
+    flRadius = robotMaxRadius-robotMinRadius
+    jumpSpeed = max (jS . possAct $ bot) robotMaxJumpSpeed --   ?
+    rcs = jumpSpeed
+
+collideBotToBot' f (prs, (b:bots)) = collideBotToBot' f (b':prs, bots') where
+    (b', bots') = foldl' foldF (b,[]) (reverse bots)
+    foldF (b'',bots'') b1 = (newB, b1':bots'') where
+        (newB, b1') = f b'' b1
+collideBotToBot' f (prs,[]) = (prs,[])
+collideBotToBot'' f bots = reverse $ fst $ collideBotToBot' f ([],bots)
+collideBotToBot = collideBotToBot'' collideEntities
+
+collideBotToBall :: Ball -> [Bot] -> (Ball, [Bot])
+collideBotToBall ball bots = collideBotToBall' collideEntities ball bots
+
+collideBotToBall' f ball bots = foldr foldF (ball,[]) bots where
+    foldF b (ball',prs) = (ball'',collideWithArena b':prs) where
+        (ball'',b') = f ball' b
+    swap (a,a0) = (a0,a)
+
 simplePredict (Prediction game iAm enemy) dt = Prediction
-    (setBall game ball') (IPlayer $ Player me mate) (EnemyPlayer $ Player bot0 bot1)
+    (setBall game ball')
+    (IPlayer $ Player me mate)
+    (EnemyPlayer $ Player enBot0 enBot1)
       where
-        ball'      = Ball l' v'
-        Ball l v   = move ballNow dt
-        (l',v')    = collideWithArena (Ball l v) 0
-        me   = undefined
-        mate = undefined
-        bot0 = undefined
-        bot1 = undefined
+        ball'        = Ball l' v'
+        mBall        = move dt ballNow
+        Ball l' v'   = collideWithArena mcbBall
+        botUpdates   = botUpdateRadius . move dt . botUpdateAction dt
+        updatedBots  = botUpdates <$> oldBots
+        collidedBots = seq updatedBots (collideBotToBot updatedBots)
+        (mcbBall, collidedBallBots) = collideBotToBall mBall collidedBots
+        [me, mate, enBot0, enBot1] = collidedBallBots
+        oldBots = [getMe iAm, getMate iAm, getEnemyBot0 enemy, getEnemyBot1 enemy]
         ballNow = ball$game
 
-simplePredict' game iAm enemy dt 
+simplePredict' game iAm enemy dt
     | isBug = trace (show ballNow ++ show dt) undefined
     | otherwise = ball' where
         ball'      = Ball l' v'
-        Ball l v   = move ballNow dt
-        (l',v')    = collideWithArena (Ball l v) 0
+        Ball l v   = move dt ballNow
+        Ball l' v' = collideWithArena (Ball l v)
         --debugPrint = show (location ballNow) ++ " " ++ show l
         ballNow = ball$game
         isBug = isNumber ballNow && not (isNumber ball')
@@ -41,6 +80,7 @@ predict p@(Prediction game iAm enemy) time dt =
     iterate predictIterate (0,p) where 
         predictIterate (t, prediction) = (t+dt, simplePredict prediction dt)
 
+collideEntities :: (PredictableCharacter x, PredictableCharacter y, Entity x, Entity y) => x -> y -> (x,y)
 collideEntities a b = (a', b') where
     dLoc = location b - location a
     distAb = norm dLoc
@@ -48,6 +88,7 @@ collideEntities a b = (a', b') where
     kn = (1/mass a) + (1/mass b)
     k e = (1/mass e)/kn
     normal = normalize dLoc
+    rcs :: (PredictableCharacter z) => z -> Double
     rcs = radiusChangeSpeed
     dVel   = (velocity b - velocity a) `dot` normal - rcs a - rcs b
     updateLoc sa e=setLocation (location e + ((sa*penetration * k e)*|normal)) e
@@ -68,7 +109,7 @@ move'' e dt | isNumber (location e) && isNumber (radius e) && isNumber dt = move
 
 move0 e dt = trace (show e ++ " " ++ show dt ++" "++ show (move0 e dt)) $ move0 e dt
 
-move e dt | isInField e = move' e dt
+move dt e | isInField e = move' e dt
           | otherwise   = e
 
 move' e dt = setLocation l . setVelocity v $ e where
@@ -83,16 +124,18 @@ clamp v m | norm v > m = (m / norm v) *| v
           | otherwise  = v
 
 f g (a,b) = (g a, g b)
-collideWithArena e radiusChangeSpeed 
-    | not $ isInField e = (location e, velocity e)
-    | otherwise =  (ePos, eVel) where
+collideWithArena e
+    | not $ isInField e = e
+    | otherwise = setVelocity eVel . setLocation ePos . setTouch touch $ e where
         Collide d n = collideArena $ location e
+        touch = Touch (pCond && velCond) n
         penetration = radius e - d
         pCond = penetration > 0
         ePos | pCond = location e + (penetration*|n)
              | True  = location e
-        vel = velocity e `dot` n - radiusChangeSpeed
-        eVel | pCond && vel < 0 = velocity e - (((1 + arenaE e) *| velocity e) * n)
+        vel = velocity e `dot` n - radiusChangeSpeed e
+        velCond = vel < 0
+        eVel | pCond && velCond = velocity e - (((1 + arenaE e) *| velocity e) * n)
              | otherwise        = velocity e
 
 collideWithArena' e radiusChangeSpeed

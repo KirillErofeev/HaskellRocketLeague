@@ -69,10 +69,10 @@ haskellAct
             meVel       = Vec3 meVelX meVelY meVelZ
             mateLoc     = Vec3 mateX mateY mateZ
             mateVel     = Vec3 mateVelX mateVelY mateVelZ
-            myBot0      = Bot meId    meLoc    meVel    meRadius    meTouchN 0
-            myBot1      = Bot mateId  mateLoc  mateVel  mateRadius  mateTouchN 0
-            eBot0       = Bot eBotId  eBotLoc  eBotVel  eBotRadius  eBotTouchN 0
-            eBot1       = Bot eBot0Id eBot0Loc eBot0Vel eBot0Radius eBot0TouchN 0
+            myBot0      = Bot meId    meLoc    meVel    meRadius    meTouchN 0 za
+            myBot1      = Bot mateId  mateLoc  mateVel  mateRadius  mateTouchN 0 za
+            eBot0       = Bot eBotId  eBotLoc  eBotVel  eBotRadius  eBotTouchN 0 za
+            eBot1       = Bot eBot0Id eBot0Loc eBot0Vel eBot0Radius eBot0TouchN 0 za
             meTouchN    = Touch meTouch    meTN
             mateTouchN  = Touch mateTouch  mateTN
             eBotTouchN  = Touch eBotTouch  eBotTN
@@ -85,5 +85,6 @@ haskellAct
             eBotVel     = Vec3 eBotVelX eBotVelY eBotVelZ
             eBot0Loc    = Vec3 eBot0X eBot0Y eBot0Z
             eBot0Vel    = Vec3 eBot0VelX eBot0VelY eBot0VelZ
+            za          = zeroAction
 
 helloFromHaskell = 1111.0
