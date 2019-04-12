@@ -12,9 +12,13 @@ import Debug.Trace (traceShow, trace)
 
 act :: Game -> IPlayer -> EnemyPlayer -> Score -> IO Double -> Answer Double
 act game iAm enemy score savedData =
-    Answer (Move zeroAction oneAction) (toList predLoc ++ toList predVel) where
-        Prediction (Game (Ball predLoc predVel) _ _) iAm' enemy' =
-            predict (Prediction game iAm enemy) (1/60) (1/6000)
+    Answer (Move jumpAction zero) stored where
+        stored = (toList predLoc ++ toList predVel ++ toList myLoc)
+        predLoc = predBallLoc p
+        predVel = predBallVel p
+        myLoc = predMyLoc p
+        iAmAct = setMyAct jumpAction iAm
+        p = predict (Prediction game iAmAct enemy) (1/60) (1/60)
         --predVel = velocity $ trace ("BALL AFTER:" ++ show (newBall)) newBall
         game' = trace ("BALL BEFORE:" ++ show (ball game)) game
         celebrate = zeroAct
@@ -24,6 +28,7 @@ act game iAm enemy score savedData =
     --Ball l b = predict game iAm enemy (1/60) (1/6000)
 
 
+jumpAction = Action zero 30
 --isIAmCloserToBall game iAm
 --     | myDist < mateDist = False
 --     | otherwise         = True

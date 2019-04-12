@@ -73,12 +73,10 @@ instance Monoid a => Monoid (Vec3 a) where
     mempty  = Vec3 mempty mempty mempty
     mappend v0 v1 = ((mappend <$>) v0) <*> v1
 
-zero :: Num a => Vec3 a
 x1 :: Num a => Vec3 a
 y1 :: Num a => Vec3 a
 z1 :: Num a => Vec3 a
 
-zero = Vec3 0 0 0
 x1   = Vec3 1 0 0
 y1   = Vec3 0 1 0
 z1   = Vec3 0 0 1
@@ -164,6 +162,7 @@ getEnemyBot1 = bot1 . getEnemyPlayer
 newtype IPlayer     = IPlayer Player
 getMe   (IPlayer (Player me _  )) = me
 getMate (IPlayer (Player _ mate)) = mate
+setMyAct a' (IPlayer (Player b b0)) = IPlayer (Player (b {possAct = a'}) b0)
 
 data Bot = Bot {botId :: Int,      
                 botLoc :: Vec3 Double, 
@@ -233,15 +232,17 @@ class Character a => PredictableCharacter a where
     setRadiusChangeSpeed :: Double -> a -> a
     setTouch :: Touch -> a -> a
     radiusChangeSpeed :: a -> Double 
+    isBot :: a -> Bool
 
 instance PredictableCharacter Bot where
     setVelocity v' (Bot a b v c d rcs act) = Bot a b v' c d rcs act 
     setLocation l' (Bot a l v c d rcs act) = Bot a l' v c d rcs act
     setRadius   r' (Bot a l v r d rcs act) = Bot a l v r' d rcs act
     setTouch   t' (Bot a l v r t rcs act)  = Bot a l v r t' rcs act
-    setRadiusChangeSpeed rcs' (Bot a l v r d rcs act) =
-        Bot a l v r d rcs' act
+    setRadiusChangeSpeed rcs' b = --traceShow rcs' $ 
+        b {botRadiusChangeSpeed = rcs'}
     radiusChangeSpeed (Bot _ _ _ _ _ rcs _) = rcs
+    isBot _ = True
 
 instance PredictableCharacter Ball where
     setVelocity v' (Ball l v) = Ball l  v'
@@ -250,6 +251,7 @@ instance PredictableCharacter Ball where
     setRadiusChangeSpeed = flip const
     setTouch             = flip const 
     radiusChangeSpeed b  = 0.0
+    isBot _ = False
 
 traceShow'  x = uncurry traceShow $ (\a->(a,a)) x
 checkNumberTrace x | not . isNumber $ x = traceShow' x 
@@ -258,9 +260,64 @@ checkNumberTrace x | not . isNumber $ x = traceShow' x
 data Prediction = Prediction {predGame :: Game, 
     predIAm :: IPlayer, predEnemy :: EnemyPlayer}
 
+predBallLoc = location . ball . predGame  
+predBallVel = velocity . ball . predGame  
+predMyLoc   = location . predIAm
+
 data Proposition = Proposition {proposeMe     :: Action Double, 
                                 proposeMate   :: Action Double,
                                 proposeEnemy0 :: Action Double,
                                 proposeEnemy1 :: Action Double}
 
 predBall = ball . predGame  
+
+class ShowStatic a where
+    show' :: a -> String
+
+instance ShowStatic Game where
+    show' (Game ball _ _) = show' ball
+
+instance ShowStatic Ball where
+    show' (Ball l v) = "Ball: " ++ show l
+
+instance ShowStatic IPlayer where
+    show' i = "I: " ++ show (location i) ++ " M: " ++ show (location . getMate $ i)  
+
+instance ShowStatic EnemyPlayer where
+    show' (EnemyPlayer e) = "E: " ++ show (location . bot0 $ e) ++ " | " ++ show (location . bot1 $ e)  
+
+instance (ShowStatic a, ShowStatic b, ShowStatic c) => ShowStatic (a,b,c) where
+    show' (a,b,c) = show' a ++ " " ++ show' b ++ " " ++ show' c
+
+class Zero a where
+    zero :: a
+
+instance Zero (Vec3 Double) where
+    zero = Vec3 0 0 0
+
+instance Zero Ball where
+    zero = Ball zero zero
+
+instance Zero Player where
+    zero = Player zero zero
+
+instance Zero IPlayer where
+    zero = IPlayer $ Player zero zero
+
+instance Zero EnemyPlayer where
+    zero = EnemyPlayer $ Player zero zero
+
+instance Zero Double where
+    zero = 0.0
+
+instance Zero Int where
+    zero = 0
+
+instance Zero (Action Double) where
+    zero = Action zero zero
+
+instance Zero Bot where
+    zero = Bot zero zero zero zero zero zero zero
+
+instance Zero Touch where
+    zero = Touch False zero

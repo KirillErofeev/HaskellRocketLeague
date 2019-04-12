@@ -18,7 +18,7 @@ test: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 helper & (sleep
 
 testEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 3 & (sleep 1 && ./a.out)
 
-testEmptyNS: clean all; ./codeball2018/codeball2018 --noshow --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 800 & (sleep 1 && ./a.out)
+testEmptyNS: clean all; ./codeball2018/codeball2018 --noshow --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 70 & (sleep 1 && ./a.out)
 
 testVsKey: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 keyboard --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 1801 & (sleep 1 && ./a.out)
 
@@ -31,11 +31,11 @@ testNoShowEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empt
 run: clean all; ./a.out
 
 all: Haskell.o Runner.o; \
-    ghc -O2 -o a.out -no-hs-main *.o -lstdc++
+    ghc -o a.out -no-hs-main *.o -lstdc++
 
-Runner.o: Runner.cpp; g++ -O3 -std=c++11 -c *.cpp csimplesocket/*.cpp -I$(GHC_INCLUDE)
+Runner.o: Runner.cpp; g++ -std=c++11 -c *.cpp csimplesocket/*.cpp -I$(GHC_INCLUDE)
 
-Haskell.o: HaskellRL.hs; ghc -fforce-recomp -O2 HaskellRL.hs
+Haskell.o: HaskellRL.hs; ghc -fforce-recomp HaskellRL.hs
 
 .PHONY: clean
 clean: ; rm -rf *.o a.out *_stub.h *.hi

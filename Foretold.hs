@@ -26,10 +26,11 @@ botUpdateAction dt bot
         tN = touchNormal . botTouch $ bot
         targetVel = clampR - ((tN `dot` clampR) *| tN)
 
-botUpdateRadius bot = setRadiusChangeSpeed rcs . setRadius r $ bot where
+botUpdateRadius bot = --traceShow (botId bot) $
+    setRadiusChangeSpeed rcs . setRadius r $ bot where
     r = robotMinRadius + flRadius * jumpSpeed / robotMaxJumpSpeed
     flRadius = robotMaxRadius-robotMinRadius
-    jumpSpeed = max (jS . possAct $ bot) robotMaxJumpSpeed --   ?
+    jumpSpeed = min (jS . possAct $ bot) robotMaxJumpSpeed --   ?
     rcs = jumpSpeed
 
 collideBotToBot' f (prs, (b:bots)) = collideBotToBot' f (b':prs, bots') where
@@ -43,12 +44,15 @@ collideBotToBot = collideBotToBot'' collideEntities
 collideBotToBall :: Ball -> [Bot] -> (Ball, [Bot])
 collideBotToBall ball bots = collideBotToBall' collideEntities ball bots
 
-collideBotToBall' f ball bots = foldr foldF (ball,[]) bots where
-    foldF b (ball',prs) = (ball'',collideWithArena b':prs) where
-        (ball'',b') = f ball' b
-    swap (a,a0) = (a0,a)
+collideBotToBall' f ball bots = --traceShow (location <$> bots)
+    foldr foldF (ball,[]) bots where
+        foldF b (ball',prs) = --traceShow (location <$> prs) 
+            (ball'', collideWithArena b':prs) where
+                (ball'',b') = --traceShow (location b) $
+                    f ball' b
 
-simplePredict (Prediction game iAm enemy) dt = Prediction
+simplePredict (Prediction game iAm enemy) dt = --traceShow (possAct me) $ 
+    Prediction
     (setBall game ball')
     (IPlayer $ Player me mate)
     (EnemyPlayer $ Player enBot0 enBot1)
@@ -59,7 +63,8 @@ simplePredict (Prediction game iAm enemy) dt = Prediction
         botUpdates   = botUpdateRadius . move dt . botUpdateAction dt
         updatedBots  = botUpdates <$> oldBots
         collidedBots = seq updatedBots (collideBotToBot updatedBots)
-        (mcbBall, collidedBallBots) = collideBotToBall mBall collidedBots
+        (mcbBall, collidedBallBots) = --traceShow (radiusChangeSpeed<$>collidedBots) $ 
+            collideBotToBall mBall collidedBots
         [me, mate, enBot0, enBot1] = collidedBallBots
         oldBots = [getMe iAm, getMate iAm, getEnemyBot0 enemy, getEnemyBot1 enemy]
         ballNow = ball$game
@@ -74,10 +79,16 @@ simplePredict' game iAm enemy dt
         ballNow = ball$game
         isBug = isNumber ballNow && not (isNumber ball')
 
+{-# NOINLINE [1] iterate' #-}
+iterate' :: (a -> a) -> a -> [a]
+iterate' f x = 
+    let x' = f x
+    in x' `seq` (x : iterate' f x')
+
 predict :: Prediction -> Double -> Double -> Prediction
-predict p@(Prediction game iAm enemy) time dt = 
+predict p@(Prediction game iAm enemy) time dt = --traceShow (possAct . getMe $ iAm)
     snd . head . dropWhile ((<time) . fst) $
-    iterate predictIterate (0,p) where 
+    iterate' predictIterate (0,p) where 
         predictIterate (t, prediction) = (t+dt, simplePredict prediction dt)
 
 collideEntities :: (PredictableCharacter x, PredictableCharacter y, Entity x, Entity y) => x -> y -> (x,y)
@@ -124,19 +135,21 @@ clamp v m | norm v > m = (m / norm v) *| v
           | otherwise  = v
 
 f g (a,b) = (g a, g b)
-collideWithArena e
-    | not $ isInField e = e
-    | otherwise = setVelocity eVel . setLocation ePos . setTouch touch $ e where
-        Collide d n = collideArena $ location e
+collideWithArena e | not $ isInField e = traceShow "NOO" $ e
+                   | otherwise = traceShow "L" $
+    setVelocity eVel . setLocation ePos . setTouch touch $ e where
+        Collide d n = trace "COLLIDES!" $ collideArena $ location e
         touch = Touch (pCond && velCond) n
         penetration = radius e - d
         pCond = penetration > 0
         ePos | pCond = location e + (penetration*|n)
              | True  = location e
-        vel = velocity e `dot` n - radiusChangeSpeed e
+        vel = debug e $ velocity e `dot` n - radiusChangeSpeed e
         velCond = vel < 0
         eVel | pCond && velCond = velocity e - (((1 + arenaE e) *| velocity e) * n)
              | otherwise        = velocity e
+        debug e x | isBot e = traceShow (radiusChangeSpeed e) x
+                  | True    = x
 
 collideWithArena' e radiusChangeSpeed
     | isNumber (location e) && isNumber (radius e) && isNumber radiusChangeSpeed = r
