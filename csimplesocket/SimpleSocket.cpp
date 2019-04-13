@@ -41,6 +41,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *----------------------------------------------------------------------------*/
 #include "SimpleSocket.h"
+#include <iostream>
 
 #pragma warning(disable: 4127)
 

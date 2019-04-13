@@ -4,30 +4,40 @@ module Algebra where
 
 import Types
 import Foretold
+import Prediction
 import Constants
 import Data.Foldable (toList)
 
 import Debug.Trace (traceShow, trace)
 --traceShow = flip const
 
-act :: Game -> IPlayer -> EnemyPlayer -> Score -> IO Double -> Answer Double
-act game iAm enemy score savedData =
-    Answer (Move jumpAction zero) stored where
+act' :: Game -> IPlayer -> EnemyPlayer -> Score -> IO Double -> Answer Double
+act' game iAm enemy score savedData = --trace ( "[" ++ show(location iAm)++"]")$ --trace ("PRED VEL " ++ show (myVel)) $ 
+    Answer (Move myAct zero) stored where
         stored = (toList predLoc ++ toList predVel ++ toList myLoc)
+        myAct = ballChaseJAct game iAm
         predLoc = predBallLoc p
         predVel = predBallVel p
         myLoc = predMyLoc p
-        iAmAct = setMyAct jumpAction iAm
-        p = predict (Prediction game iAmAct enemy) (1/60) (1/60)
+        myVel = predMyVel p
+        iAmAct = setMyAct myAct iAm
+        p = predict (Prediction game iAmAct enemy) (1/60) (1/6000)
         --predVel = velocity $ trace ("BALL AFTER:" ++ show (newBall)) newBall
         game' = trace ("BALL BEFORE:" ++ show (ball game)) game
         celebrate = zeroAct
-    --r = zeroAct
-    --debugPrint = show (location ballNow) ++ " " ++ show l
-    --ballNow = ball$game
-    --Ball l b = predict game iAm enemy (1/60) (1/6000)
 
+act :: Game -> IPlayer -> EnemyPlayer -> Score -> IO Double -> Answer Double
+act game iAm enemy score savedData = --trace ( "[" ++ show(location iAm)++"]")$ --trace ("PRED VEL " ++ show (myVel)) $ 
+    Answer (corMove game iAm move) stored where
+        move = getBestMove game iAm enemy (ballChaseAct game iAm)
+        stored = [0,0,0,0,0,0,0,0,0,0,0,0]
 
+corMove game iAm (Move (Action v0 j0) (Action v1 j1)) = Move (Action v0 j0') (Action v1 j1') where
+    j0' | distance (bl) (location iAm) > 3.5 = 0
+        | otherwise = j0
+    j1' | distance (bl) (location . getMate $ iAm) > 3.5 = 0
+        | otherwise = j1
+    bl = location . ball $ game
 jumpAction = Action zero 30
 --isIAmCloserToBall game iAm
 --     | myDist < mateDist = False
@@ -36,6 +46,16 @@ jumpAction = Action zero 30
 --           bl = location . ball $ game
 --           myDist   = distance (location iAm) bl
 --           mateDist = distance (location (getMate iAm)) bl
+
+ballChaseAct game iAm = Action v 0 where
+    v = 1000 *| (bl - location iAm)
+    bl = location . ball $ game
+
+ballChaseJAct game iAm = Action v j where
+    v = 1000 *| (bl - location iAm)
+    bl = location . ball $ game
+    j | distance bl (location iAm) < 3.5 = 30
+      | otherwise                        = 0
 
 isIAmCloserToBall game iAm
     | (botId . getMe) iAm > (botId . getMate) iAm = True

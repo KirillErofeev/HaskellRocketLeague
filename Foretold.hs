@@ -14,6 +14,7 @@ debugPredict game iAm enemy time dt = trace debugPrint ball' where
     debugPrint = show (location ballNow) ++ " " ++ show l
     ballNow = ball$game
 
+freeBallHit ball e = undefined 
 botUpdateAction dt bot
     | notTouch || norm targetVelChange <= 0 = bot
     | otherwise = setVelocity v bot where
@@ -69,27 +70,6 @@ simplePredict (Prediction game iAm enemy) dt = --traceShow (possAct me) $
         oldBots = [getMe iAm, getMate iAm, getEnemyBot0 enemy, getEnemyBot1 enemy]
         ballNow = ball$game
 
-simplePredict' game iAm enemy dt
-    | isBug = trace (show ballNow ++ show dt) undefined
-    | otherwise = ball' where
-        ball'      = Ball l' v'
-        Ball l v   = move dt ballNow
-        Ball l' v' = collideWithArena (Ball l v)
-        --debugPrint = show (location ballNow) ++ " " ++ show l
-        ballNow = ball$game
-        isBug = isNumber ballNow && not (isNumber ball')
-
-{-# NOINLINE [1] iterate' #-}
-iterate' :: (a -> a) -> a -> [a]
-iterate' f x = 
-    let x' = f x
-    in x' `seq` (x : iterate' f x')
-
-predict :: Prediction -> Double -> Double -> Prediction
-predict p@(Prediction game iAm enemy) time dt = --traceShow (possAct . getMe $ iAm)
-    snd . head . dropWhile ((<time) . fst) $
-    iterate' predictIterate (0,p) where 
-        predictIterate (t, prediction) = (t+dt, simplePredict prediction dt)
 
 collideEntities :: (PredictableCharacter x, PredictableCharacter y, Entity x, Entity y) => x -> y -> (x,y)
 collideEntities a b = (a', b') where
@@ -102,8 +82,8 @@ collideEntities a b = (a', b') where
     rcs :: (PredictableCharacter z) => z -> Double
     rcs = radiusChangeSpeed
     dVel   = (velocity b - velocity a) `dot` normal - rcs a - rcs b
-    updateLoc sa e=setLocation (location e + ((sa*penetration * k e)*|normal)) e
-    updateVel sa e=setVelocity (velocity e - ((sa * k e)*|impulse)) e
+    updateLoc sa e = setLocation (location e + ((sa*penetration * k e)*|normal)) e
+    updateVel sa e = setVelocity (velocity e - ((sa * k e)*|impulse)) e
     update sa = updateLoc sa . updateVel sa
     impulse = ((1+meanHitE) * dVel) *| normal
     (a',b') | penetration <= 0 = (a, b)
@@ -135,21 +115,25 @@ clamp v m | norm v > m = (m / norm v) *| v
           | otherwise  = v
 
 f g (a,b) = (g a, g b)
-collideWithArena e | not $ isInField e = traceShow "NOO" $ e
-                   | otherwise = traceShow "L" $
+collideWithArena e | not $ isInField e = e
+                   | otherwise = debug e  $
     setVelocity eVel . setLocation ePos . setTouch touch $ e where
-        Collide d n = trace "COLLIDES!" $ collideArena $ location e
-        touch = Touch (pCond && velCond) n
+        Collide d n = collideArena $ location e
+        touch = Touch (pCond && velCond) tN
+        tN | pCond  && velCond = n
+           | otherwise         = zero
         penetration = radius e - d
         pCond = penetration > 0
         ePos | pCond = location e + (penetration*|n)
              | True  = location e
-        vel = debug e $ velocity e `dot` n - radiusChangeSpeed e
+        vel = --trace (show(radiusChangeSpeed e)++" "++show(velocity e `dot` n - radiusChangeSpeed e)) $ 
+            velocity e `dot` n - radiusChangeSpeed e
         velCond = vel < 0
-        eVel | pCond && velCond = velocity e - (((1 + arenaE e) *| velocity e) * n)
+        eVel | pCond && velCond = --traceShow' $ 
+            velocity e - (((1 + arenaE e) * vel) *| n)
              | otherwise        = velocity e
-        debug e x | isBot e = traceShow (radiusChangeSpeed e) x
-                  | True    = x
+        debug e | isBot e = id--trace (show (location e) ++ " D " ++ show d ++ " R "++ show(radius e))
+                | True    = id
 
 collideWithArena' e radiusChangeSpeed
     | isNumber (location e) && isNumber (radius e) && isNumber radiusChangeSpeed = r
@@ -187,7 +171,8 @@ collideArena (Vec3 x y z) = collideArenaQ' where
     p' = Vec3 (abs x) y (abs z)
     collideArenaQ' = let Collide d n = collideArenaQ p' in
         Collide d (cor n)
-    cor (Vec3 a b c) = Vec3 (signum a * x) b (signum c * z)
+    cor (Vec3 a b c) = Vec3 (signum x * a) b (signum z * c)
+    cor' (Vec3 a b c) = Vec3 (signum a * x) b (signum c * z)
 
 collideArenaQ p =
     fromJust . foldr1 min . filter isJust . (fmap ($ p)) $

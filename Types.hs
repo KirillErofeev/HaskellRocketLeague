@@ -34,7 +34,7 @@ class MeasurableSpace v m where
 instance Floating a => MeasurableSpace Vec3 a where
     distance v1 v0 = norm $ v0 - v1
 
-data Vec3 a = Vec3 {x :: a, y :: a, z :: a} 
+data Vec3 a = Vec3 {x :: !a, y :: !a, z :: !a} 
     deriving (Eq, Ord)
 
 instance Show a => Show (Vec3 a) where
@@ -85,8 +85,12 @@ instance Foldable Vec3 where
     foldMap f (Vec3 x y z) = mempty <> f x <> f y <> f z 
         where (<>) = mappend
 
-data Action a = Action {actVelocity :: Vec3 a, jS :: a} 
+data Action a = Action {actVelocity :: !(Vec3 a), jS :: !a} 
     deriving (Show, Eq)
+
+actFromX x = Action (Vec3 x 0 0) 0 
+actSetZ (Action v j) z = Action (v {z=z}) j
+actSetJ a j = a {jS=j}
 
 zeroAct = (zeroAction, [])
 zeroAction = Action (Vec3 0 0 0) 0.0
@@ -96,13 +100,19 @@ instance Foldable Action where
     foldr f m (Action v jump) = foldr f (jump `f` m) v
 
 
-data Collide = Collide {colDist :: Double, colNormal :: Vec3 Double}
+data Collide = Collide {colDist :: !Double, colNormal :: !(Vec3 Double)}
                     deriving (Show)
 
-data Move a = Move {myAction :: Action a, mateAction :: Action a} 
+data Move a = Move {myAction :: !(Action a), mateAction :: !(Action a)} 
     deriving (Show, Eq)
 
-data Answer a = Answer {getMove :: Move a, getStored :: [a]}
+moveToIAm (Move my mate) (IPlayer (Player b0 b1)) = 
+    IPlayer $ Player (b0 {possAct=my}) (b1 {possAct=mate}) 
+
+setEnemyAct a (EnemyPlayer (Player b0 b1)) = 
+    EnemyPlayer $ Player (b0 {possAct=a}) (b1 {possAct=a}) 
+
+data Answer a = Answer {getMove :: !(Move a), getStored :: !([a])}
 
 instance ForeignType (Answer Double) where
     toForeignType (Answer m s) = toForeignType $ toList m ++ toList s
@@ -147,15 +157,15 @@ instance (Foldable a, Foldable b) => ForeignType (a Double,b Double) where
 --    toForeignType (a,b) = toForeignType $ foldr (:) [] a ++ foldr (:) [] b
 
 
-data Game = Game {ball :: Ball, currentTick :: Int, score :: Score}
+data Game = Game {ball :: !(Ball), currentTick :: !Int, score :: !Score}
 
 setBall (Game b ct score) ball = Game ball ct score
 setBall' (Game b ct score) ball | isNumber ball = Game ball ct score
                                | otherwise = trace (show ball) undefined
 
-data Score   = Score {myScore :: Int, enemyScore :: Int}
+data Score   = Score {myScore :: !Int, enemyScore :: !Int}
 
-data Player         = Player {bot0 :: Bot, bot1 :: Bot}
+data Player         = Player {bot0 :: !Bot, bot1 :: !Bot}
 newtype EnemyPlayer = EnemyPlayer {getEnemyPlayer :: Player}
 getEnemyBot0 = bot0 . getEnemyPlayer
 getEnemyBot1 = bot1 . getEnemyPlayer
@@ -164,16 +174,16 @@ getMe   (IPlayer (Player me _  )) = me
 getMate (IPlayer (Player _ mate)) = mate
 setMyAct a' (IPlayer (Player b b0)) = IPlayer (Player (b {possAct = a'}) b0)
 
-data Bot = Bot {botId :: Int,      
-                botLoc :: Vec3 Double, 
-                botVel :: Vec3 Double, 
-                botRad :: Double, 
-                botTouch :: Touch, 
-                botRadiusChangeSpeed :: Double,
-                possAct :: Action Double}
+data Bot = Bot {botId :: !Int,      
+                botLoc :: !(Vec3 Double), 
+                botVel :: !(Vec3 Double), 
+                botRad :: !Double, 
+                botTouch :: !Touch, 
+                botRadiusChangeSpeed :: !Double,
+                possAct :: !(Action Double)}
 
-data Touch  = Touch {isTouch :: Bool, touchNormal :: Vec3 Double}
-data Ball    = Ball {ballLoc :: Vec3 Double, ballVel :: Vec3 Double} 
+data Touch  = Touch {isTouch :: !Bool, touchNormal :: !(Vec3 Double)}
+data Ball    = Ball {ballLoc :: !(Vec3 Double), ballVel :: !(Vec3 Double)} 
     deriving (Eq)
 
 instance Show Ball where
@@ -257,17 +267,18 @@ traceShow'  x = uncurry traceShow $ (\a->(a,a)) x
 checkNumberTrace x | not . isNumber $ x = traceShow' x 
                    | otherwise          = x
 
-data Prediction = Prediction {predGame :: Game, 
-    predIAm :: IPlayer, predEnemy :: EnemyPlayer}
+data Prediction = Prediction {predGame :: !Game, 
+    predIAm :: !IPlayer, predEnemy :: !EnemyPlayer}
 
 predBallLoc = location . ball . predGame  
 predBallVel = velocity . ball . predGame  
 predMyLoc   = location . predIAm
+predMyVel   = velocity . predIAm
 
-data Proposition = Proposition {proposeMe     :: Action Double, 
-                                proposeMate   :: Action Double,
-                                proposeEnemy0 :: Action Double,
-                                proposeEnemy1 :: Action Double}
+data Proposition = Proposition {proposeMe     :: !(Action Double), 
+                                proposeMate   :: !(Action Double),
+                                proposeEnemy0 :: !(Action Double),
+                                proposeEnemy1 :: !(Action Double)}
 
 predBall = ball . predGame  
 
@@ -316,8 +327,20 @@ instance Zero Int where
 instance Zero (Action Double) where
     zero = Action zero zero
 
+instance Zero (Move Double) where
+    zero = Move zero zero
+
 instance Zero Bot where
     zero = Bot zero zero zero zero zero zero zero
 
 instance Zero Touch where
     zero = Touch False zero
+
+instance Zero Score where
+    zero = Score 0 0
+
+instance Zero Game where
+    zero = Game zero zero zero
+
+instance Zero Prediction where
+    zero = Prediction zero zero zero

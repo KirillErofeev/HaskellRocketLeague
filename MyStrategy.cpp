@@ -11,7 +11,13 @@
 using namespace model;
 
 MyStrategy::MyStrategy() {
+    allTime = std::clock();
     isStrategyComputed = false;
+}
+
+MyStrategy::~MyStrategy() {
+    double seconds = double(std::clock()-allTime)/CLOCKS_PER_SEC;
+    std::cout << "Time: " << seconds << "s."<< std::endl;
 }
 
 std::string MyStrategy::custom_rendering() { return "";}
@@ -22,14 +28,43 @@ void print(T a, int n){
         std::cout << a[i] << " ";
 }
 
-void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Action& action) {
+void MyStrategy::act(const Robot& me0, const Rules& rules, const Game& game, Action& action) {
     if (game.current_tick == 0 && !isStrategyComputed){
-        stored = std::vector<double>(100);
+        stored  = std::vector<double>(100);
+        stored0 = std::vector<double>(100);
         std::cout << "INI" << std::endl;
     }
 
+    Robot mate;
+    for(const auto& r: game.robots){
+        if (r.is_teammate && r.id!=me0.id)
+            mate = r;
+    }
+
+    if (me0.id < mate.id){
+        //std::cout << game.current_tick << ": ";
+        std::vector<double> showS = stored;
+        if(isStrategyComputed){
+            showS = stored0;
+        }
+        //std::cout << 
+        //    showS[8]  - game.ball.x << " " <<
+        //    showS[9]  - game.ball.y << " " <<
+        //    showS[10] - game.ball.z << " " << 
+        //    showS[11] - game.ball.velocity_x << " " <<
+        //    showS[12] - game.ball.velocity_y << " " <<
+        //    showS[13] - game.ball.velocity_z << " " << 
+        //    //showS[14] << " " <<
+        //    //showS[15] << " " <<
+        //    //showS[16] << " " << 
+        //    //showS[14] - me0.x << " " <<
+        //    //showS[15] - me0.y << " " <<
+        //    //showS[16] - me0.z << " " << 
+        //    std::endl;
+    }
+
+
     if (!isStrategyComputed){
-        std::cout << game.current_tick << ": ";
         Player iAm;
         Player enemy;
         for(const auto& p: game.players){
@@ -39,12 +74,13 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
                 enemy = p;
         }
 
+        Robot me;
         Robot mate;
         Robot eRobot;
         Robot eRobot0;
         bool isESet = false;
         for(const auto& r: game.robots){
-            if (r.is_teammate)
+            if (r.is_teammate && r.id!=me0.id)
                 mate = r;
             if (enemy.id == r.player_id && !isESet){
                 eRobot = r;
@@ -52,6 +88,12 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
             }
             if (enemy.id == r.player_id && isESet)
                 eRobot0 = r;
+        }
+        if (mate.id < me0.id){
+            me = mate;
+            mate = me0;
+        }else{
+            me = me0;
         }
 
         //std::cout << game.current_tick << ": " 
@@ -80,53 +122,27 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
                     game.current_tick, iAm.score, enemy.score, stored.data()
                     ));
 
-        //std::cout << out[0] << " " <<
-        //             out[1] << " " <<
-        //             out[2] << " " <<
-        //             out[3] << " " <<
-        //             out[4] << " " <<
-        //             out[5] << " " <<
-        //             out[6] << " " <<
-        //             out[7] << " " << std::endl;
-
-        //print(stored.data()+4, 3);
-        //print(stored.data()+7, 3);
-
-        std::cout << 
-                     stored[8]  - game.ball.x << " " <<
-                     stored[9]  - game.ball.y << " " <<
-                     stored[10] - game.ball.z << " " << 
-                     stored[11] - game.ball.velocity_x << " " <<
-                     stored[12] - game.ball.velocity_y << " " <<
-                     stored[13] - game.ball.velocity_z << " " << 
-                     std::endl;
-
-        action.target_velocity_x = out[0];
-        action.target_velocity_y = out[1];
-        action.target_velocity_z = out[2];
-        action.jump_speed        = out[3];
-
-        std::copy(out, out+4+4+6, stored.begin());
-
+        std::copy(stored.begin(), stored.end(), stored0.begin());
+        std::copy(out, out+4+4+6+3, stored.begin());
 
         isStrategyComputed = true;
-
     }
     else{
+        isStrategyComputed = false;
+    }
+
+
+    if (me0.id < mate.id){
+        action.target_velocity_x = stored[0];
+        action.target_velocity_y = stored[1];
+        action.target_velocity_z = stored[2];
+        action.jump_speed        = stored[3];
+    }else{
         action.target_velocity_x = stored[4];
         action.target_velocity_y = stored[5];
         action.target_velocity_z = stored[6];
         action.jump_speed        = stored[7];
-        isStrategyComputed = false;
     }
-    //print(stored,10);
-    //std::cout << std::endl;
-        //std::cout <<
-        //    action.target_velocity_x << " " <<  
-        //    action.target_velocity_y << " " << 
-        //    action.target_velocity_z << " " << 
-        //    action.jump_speed        << " " << 
-        //    std::endl;
 
 }
 
