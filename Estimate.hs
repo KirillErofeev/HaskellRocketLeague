@@ -5,13 +5,14 @@ import Types
 import Constants
 import Debug.Trace (trace)
 
-estimate :: Game -> IPlayer -> EnemyPlayer -> Double
+maxPoints = 1000
 
+estimate :: Game -> IPlayer -> EnemyPlayer -> Double
 estimate' game iAm enemy | z bl > arenaDepth/2 + ballRadius = maxPoints
-                        | z bl < -arenaDepth/2 - ballRadius = minPoints
-                        | z bl < 0 = z bl * totalPoints / arenaDepth + abs(x bl) * 3
-                        | z bl > 0 = z bl * totalPoints / arenaDepth - abs(x bl) * 3
-                        | otherwise = 0 where
+                         | z bl < -arenaDepth/2 - ballRadius = -maxPoints
+                         | z bl < 0 = z bl * totalPoints / arenaDepth + abs(x bl) * 3
+                         | z bl > 0 = z bl * totalPoints / arenaDepth - abs(x bl) * 3
+                         | otherwise = 0 where
                             bot0en = getEnemyBot0 enemy
                             bl = location (ball game)
                             meLoc = location (getMe iAm)
@@ -20,8 +21,6 @@ estimate' game iAm enemy | z bl > arenaDepth/2 + ballRadius = maxPoints
                             -- bot1Loc = location (bot1 enemy)
                             -- fromdistance (Vec3 0 0 (-arenaDepth/2)) (bl)
                             totalPoints = 2000
-                            minPoints = -1000
-                            maxPoints = 1000
 
 estimate game iAm enemy = estimate' game iAm enemy + cor where
     cor = (80 - minBallDistance) + (80 - minDefDistance - minBallDistance)

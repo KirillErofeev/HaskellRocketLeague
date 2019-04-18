@@ -30,7 +30,7 @@ act :: Game -> IPlayer -> EnemyPlayer -> Score -> IO Double -> Answer Double
 act game iAm enemy score savedData = --trace ( "[" ++ show(location iAm)++"]")$ --trace ("PRED VEL " ++ show (myVel)) $ 
     Answer (corMove game iAm move) stored where
         move = getBestMove game iAm enemy (ballChaseAct game iAm)
-        stored = [0,0,0,0,0,0,0,0,0,0,0,0]
+        stored = [0,0,0, 0,0,0, 0,0,0, 0,0,0]
 
 corMove game iAm (Move (Action v0 j0) (Action v1 j1)) = Move (Action v0 j0') (Action v1 j1') where
     j0' | distance (bl) (location iAm) > 3.5 = 0
@@ -65,9 +65,6 @@ isIAmCloserToBall game iAm
     | otherwise                                   = False
         where
             bl = (location . ball $ game)
-
-goTo iAm point = Action v 0 where
-    v = 1e3 *| xzPrj (point - location iAm)
 
 hitBall game iAm = condHitBall game iAm
 

@@ -88,6 +88,9 @@ instance Foldable Vec3 where
 data Action a = Action {actVelocity :: !(Vec3 a), jS :: !a} 
     deriving (Show, Eq)
 
+goTo iAm point = Action v 0 where
+    v = 1e3 *| xzPrj (location point - location iAm)
+
 actFromX x = Action (Vec3 x 0 0) 0 
 actSetZ (Action v j) z = Action (v {z=z}) j
 actSetJ a j = a {jS=j}
@@ -216,6 +219,9 @@ instance MoveAble Ball where
 instance MoveAble (Action Double) where
     velocity = actVelocity
 
+instance MoveAble (Vec3 Double) where
+    velocity = id
+
 instance MoveAble IPlayer where
     velocity = velocity . getMe
 
@@ -230,6 +236,10 @@ instance Character Bot where
 instance Character Ball where
     radius   (Ball _ _) = ballRadius
     location (Ball l _) = l
+
+instance Character (Vec3 Double) where
+    radius v = norm v
+    location = id
 
 instance Character IPlayer where
     radius   = radius   . getMe
