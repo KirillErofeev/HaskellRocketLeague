@@ -42,7 +42,6 @@ void MyStrategy::act(const Robot& me0, const Rules& rules, const Game& game, Act
     }
 
     if (me0.id < mate.id){
-        //std::cout << game.current_tick << ": ";
         std::vector<double> showS = stored;
         if(isStrategyComputed){
             showS = stored0;
@@ -65,6 +64,7 @@ void MyStrategy::act(const Robot& me0, const Rules& rules, const Game& game, Act
 
 
     if (!isStrategyComputed){
+        //std::cout << game.current_tick << ": ";
         Player iAm;
         Player enemy;
         for(const auto& p: game.players){

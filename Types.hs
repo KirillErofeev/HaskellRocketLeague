@@ -1,12 +1,13 @@
 {-#language MultiParamTypeClasses #-}
 {-#language FlexibleInstances #-}
+{-#language NoMonomorphismRestriction #-}
 
 module Types where 
 
 import Foreign.Marshal (newArray)
 import Foreign.Ptr (Ptr(..))
 import Data.Semigroup (Semigroup, (<>))
-import Data.Monoid (Sum, All, getAny, All(..))
+import Data.Monoid (Sum, Sum(..), getSum, All, getAny, All(..))
 import Debug.Trace (trace, traceShow)
 import Data.Foldable (toList)
 
@@ -28,11 +29,8 @@ class Normed v n where
 instance Floating a => Normed Vec3 a where
     norm v = sqrt $ foldr1 (+) $ (**2) <$> v
 
-class MeasurableSpace v m where
-    distance :: v m -> v m -> m
+distance v0 v1 = norm $ location v0 - location v1
 
-instance Floating a => MeasurableSpace Vec3 a where
-    distance v1 v0 = norm $ v0 - v1
 
 data Vec3 a = Vec3 {x :: !a, y :: !a, z :: !a} 
     deriving (Eq, Ord)
@@ -98,6 +96,8 @@ actSetJ a j = a {jS=j}
 zeroAct = (zeroAction, [])
 zeroAction = Action (Vec3 0 0 0) 0.0
 oneAction  = Action (Vec3 1 4 8) 8.0
+
+zip3' l0 l1 l2 = zip l0 (zip l1 l2)
 
 instance Foldable Action where
     foldr f m (Action v jump) = foldr f (jump `f` m) v
@@ -183,9 +183,14 @@ data Bot = Bot {botId :: !Int,
                 botRad :: !Double, 
                 botTouch :: !Touch, 
                 botRadiusChangeSpeed :: !Double,
-                possAct :: !(Action Double)}
+                possAct :: !(Action Double)} 
+                   deriving (Show)
+
+setPossAct b p = b {possAct = p}
 
 data Touch  = Touch {isTouch :: !Bool, touchNormal :: !(Vec3 Double)}
+   deriving (Show)
+
 data Ball    = Ball {ballLoc :: !(Vec3 Double), ballVel :: !(Vec3 Double)} 
     deriving (Eq)
 
@@ -194,6 +199,16 @@ instance Show Ball where
 
 mapBall f (Ball l v) = Ball (f <$> l) (f <$> v)
 
+class Valuable a where
+    value :: a -> Double
+    shift :: Double -> a -> a
+
+instance Valuable (Action Double, Double) where
+    value    = snd
+    shift sht (a, v) = (a, v-sht) 
+
+toCenter l = (shift (mean l)) <$> l
+mean l = (getSum . foldMap (Sum . value) $ l) / fromIntegral (length l)
 
 class Entity a where
     arenaE :: a -> Double
@@ -344,7 +359,7 @@ instance Zero Bot where
     zero = Bot zero zero zero zero zero zero zero
 
 instance Zero Touch where
-    zero = Touch False zero
+    zero = Touch True (Vec3 0 1 0)
 
 instance Zero Score where
     zero = Score 0 0
@@ -354,3 +369,11 @@ instance Zero Game where
 
 instance Zero Prediction where
     zero = Prediction zero zero zero
+
+takeList [] _ = []
+takeList _ [] = []
+takeList (i:ixs) (x:xs) 
+   | i == 0 = x : takeList ixs xs
+   | True   = takeList (i-1:ixs) xs 
+
+fst3 (a,_,_) = a

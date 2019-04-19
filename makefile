@@ -29,7 +29,7 @@ testAgainstEmptyNoShow: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --
 
 testNoShow: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 helper --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --noshow --duration 3000 & ((sleep 1 && (./a.out)) )
 
-testNoShowEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --noshow --duration 3000 & ((sleep 1 && (./a.out)) )
+testNoShowEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --no-countdown --log-file ../log --results-file ../r --noshow --duration 100 & ((sleep 1 && (./a.out) > out) )
 
 run: clean all; ./a.out
 
@@ -41,4 +41,4 @@ Runner.o: Runner.cpp; g++ -O3 -std=c++11 -c *.cpp csimplesocket/*.cpp -I$(GHC_IN
 Haskell.o: HaskellRL.hs; ghc -O2 -fforce-recomp HaskellRL.hs
 
 .PHONY: clean
-clean: ; rm -rf *.o a.out *_stub.h *.hi
+clean: ; rm -rf *.o a.out *_stub.h *.hi out

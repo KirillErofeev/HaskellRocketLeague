@@ -21,23 +21,22 @@ act' game iAm enemy score savedData = --trace ( "[" ++ show(location iAm)++"]")$
         myLoc = predMyLoc p
         myVel = predMyVel p
         iAmAct = setMyAct myAct iAm
-        p = predict (Prediction game iAmAct enemy) (1/60) (1/6000)
+        p = predict simplePredict (Prediction game iAmAct enemy) (1/60) (1/6000)
         --predVel = velocity $ trace ("BALL AFTER:" ++ show (newBall)) newBall
         game' = trace ("BALL BEFORE:" ++ show (ball game)) game
         celebrate = zeroAct
 
 act :: Game -> IPlayer -> EnemyPlayer -> Score -> IO Double -> Answer Double
-act game iAm enemy score savedData = --trace ( "[" ++ show(location iAm)++"]")$ --trace ("PRED VEL " ++ show (myVel)) $ 
-    Answer (corMove game iAm move) stored where
-        move = getBestMove game iAm enemy (ballChaseAct game iAm)
-        stored = [0,0,0, 0,0,0, 0,0,0, 0,0,0]
+act game iAm enemy score savedData 
+    | currentTick game `mod` ddd == 0 = trace ( "\n"++show (currentTick game) ++ ": [" ++ show(ball$game) ++"] " ++ "\n["++show (predLoc)++"]") $ answer 
+    | otherwise = answer where
+        answer  | norm (location predLoc) < 10000 = Answer (Move kickoff zero) stored
+        move    = getBestMove game iAm enemy (ballChaseAct game iAm)
+        kickoff = freeKick game (getMe iAm) goalCenter 10
+        predLoc = predict simpleFreeBallPredict (ball$game) (ddd/60) (1/6000)
+        stored  = [0,0,0, 0,0,0, 0,0,0, 0,0,0]
+        ddd = 100
 
-corMove game iAm (Move (Action v0 j0) (Action v1 j1)) = Move (Action v0 j0') (Action v1 j1') where
-    j0' | distance (bl) (location iAm) > 3.5 = 0
-        | otherwise = j0
-    j1' | distance (bl) (location . getMate $ iAm) > 3.5 = 0
-        | otherwise = j1
-    bl = location . ball $ game
 jumpAction = Action zero 30
 --isIAmCloserToBall game iAm
 --     | myDist < mateDist = False

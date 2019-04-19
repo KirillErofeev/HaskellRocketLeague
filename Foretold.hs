@@ -5,7 +5,6 @@ import Types
 import Constants
 import Debug.Trace (traceShow, trace)
 import Data.Foldable (foldl')
-import Test
 
 debugPredict game iAm enemy time dt = trace debugPrint ball' where
     ball'      = collideWithArena (Ball l v)
@@ -52,7 +51,7 @@ collideBotToBall' f ball bots = --traceShow (location <$> bots)
                 (ball'',b') = --traceShow (location b) $
                     f ball' b
 
-simplePredict (Prediction game iAm enemy) dt = --traceShow (possAct me) $ 
+simplePredict dt (Prediction game iAm enemy) = --traceShow (possAct me) $ 
     Prediction
     (setBall game ball')
     (IPlayer $ Player me mate)
@@ -70,6 +69,24 @@ simplePredict (Prediction game iAm enemy) dt = --traceShow (possAct me) $
         oldBots = [getMe iAm, getMate iAm, getEnemyBot0 enemy, getEnemyBot1 enemy]
         ballNow = ball$game
 
+simpleBotBallPredict dt (ball,bot) = --trace (show (location bot) ++ ":::" ++ show(location bot')) $ 
+    (ball', bot') where
+        ball'        = Ball l' v'
+        mBall        = move dt ball
+        Ball l' v'   = collideWithArena mcbBall
+        botUpdates   = botUpdateRadius . move dt . botUpdateAction dt
+        updatedBots  = botUpdates <$> oldBots
+        collidedBots = seq updatedBots (collideBotToBot updatedBots)
+        (mcbBall, collidedBallBots) = --traceShow (radiusChangeSpeed<$>collidedBots) $ 
+            collideBotToBall mBall collidedBots
+        [bot'] = collidedBallBots
+        oldBots = [bot]
+
+simpleFreeBallPredict ball@(Ball l v) dt = --traceShow (possAct me) $ 
+    newBall
+      where
+        mBall        = move dt ball
+        newBall      = collideWithArena mBall
 
 collideEntities :: (PredictableCharacter x, PredictableCharacter y, Entity x, Entity y) => x -> y -> (x,y)
 collideEntities a b = (a', b') where

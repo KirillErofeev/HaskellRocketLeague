@@ -25,11 +25,11 @@ iterate' f x =
     let x' = f x
     in x' `seq` (x : iterate' f x')
 
-predict :: Prediction -> Double -> Double -> Prediction
-predict p@(Prediction game iAm enemy) time dt = --traceShow (possAct . getMe $ iAm)
+predict :: Double -> Double -> (Double -> a -> a) -> a -> a
+predict dt time simplePredict p = --traceShow (possAct . getMe $ iAm)
     snd . head . dropWhile ((<time) . fst) $
     iterate' predictIterate (0,p) where 
-        predictIterate (t, prediction) = (t+dt, simplePredict prediction dt)
+        predictIterate (t, prediction) = (t+dt, simplePredict dt prediction)
 
 minVelGrid1d = [-1000.0,0.0,1000.0]
 minJumpGrid = [0.0,30.0]
@@ -44,6 +44,8 @@ minGrid bot | not $ (isTouch . botTouch) bot = [zero]
     za <- gridZ minVelGrid1d xa 
     gridJ minJumpGrid za
 
+minGridBots bot = (\x -> bot {possAct=x}) <$> minGrid bot
+
 minGridMove gb0 gb1 = Move <$> gb0 <*> gb1
 
 estimatePrd (Prediction game i e) = estimate game i e
@@ -52,7 +54,7 @@ deepEstimate :: Game -> IPlayer -> EnemyPlayer -> Action Double -> Move Double -
 deepEstimate game iAm enemy eAc move = stepForesight game iAm enemy eAc move
 
 stepForesight game iAm enemy eAc move@(Move act0 act1) = (estimatePrd p, p) where
-    p = predict (Prediction game iAm' enemy') (3/60) (1/60)
+    p = predict (1/60) (3/60) simplePredict (Prediction game iAm' enemy') 
     iAm'   = moveToIAm move iAm
     enemy' = setEnemyAct eAc enemy 
 
@@ -82,8 +84,15 @@ goalCenter = Vec3 x y z where
     z = arenaWidth/2
 
 freeKick game executor goal time 
-    | isReadyForKick = goTo executor (ball$game) 
-    | otherwise      = undefined
+    | isReadyForKick = (goTo executor (ball$game)) {jS=300} 
+    | otherwise      = goTo executor (ball$game)
         where
-            isReadyForKick = True
+            isReadyForKick = distance (ball$game) executor < 11.9
+
+bestFreeKick dt enemy executor ball =
+   foldr1 max                           $
+   uncurry (freeKickEstimate dt enemy)  .
+   curry (simpleBotBallPredict dt) ball .
+   (\x -> executor {possAct = x})      <$>
+   minGrid executor
 
