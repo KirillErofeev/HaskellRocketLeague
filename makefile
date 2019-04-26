@@ -20,7 +20,8 @@ test: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 helper & (sleep
 
 testEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 999 & (sleep 1 && ./a.out)
 
-testEmptyNS: clean all; ./codeball2018/codeball2018 --noshow --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 1777 & (sleep 1 && ./a.out)
+testEmptyNS: clean all; ./codeball2018/codeball2018 --noshow --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 300 & (sleep 1 && ./a.out)
+
 testEmptyFull: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --p1-dump ../out --no-countdown --log-file ../log --results-file ../r & (sleep 1 && ./a.out)
 
 testVsKey: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 keyboard --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --duration 1801 & (sleep 1 && ./a.out)
@@ -29,14 +30,16 @@ testAgainstEmptyNoShow: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --
 
 testNoShow: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 helper --p1-dump ../out --no-countdown --log-file ../log --results-file ../r --noshow --duration 3000 & ((sleep 1 && (./a.out)) )
 
-testNoShowEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --no-countdown --log-file ../log --results-file ../r --noshow --duration 100 & ((sleep 1 && (./a.out) > out) )
+testNoShowEmpty: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --no-countdown --log-file ../log --results-file ../r --noshow --duration 300 & ((sleep 1 && ./a.out 2>out) )
+testNSE: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --no-countdown --log-file ../log0 --noshow --duration 100 & ((sleep 1 && ./a.out 2>out0) )
+testNSE0: clean all; ./codeball2018/codeball2018 --p1 tcp-31003 --p2 empty --no-countdown --log-file ../log1 --noshow --duration 200 & ((sleep 1 && ./a.out))
 
 run: clean all; ./a.out
 
 all: Haskell.o Runner.o; \
     ghc -O2 -o a.out -no-hs-main *.o -lstdc++
 
-Runner.o: Runner.cpp; g++ -O3 -std=c++11 -c *.cpp csimplesocket/*.cpp -I$(GHC_INCLUDE)
+Runner.o: Runner.cpp; g++ -O2 -std=c++11 -c *.cpp csimplesocket/*.cpp -I$(GHC_INCLUDE)
 
 Haskell.o: HaskellRL.hs; ghc -O2 -fforce-recomp HaskellRL.hs
 

@@ -13,6 +13,10 @@ import Data.Foldable (toList)
 
 import Constants
 
+
+enemyGoalkeeper :: Vec3 Double
+enemyGoalkeeper = Vec3 0 0 40 
+
 class DoubleLike a where
     toDouble :: a -> Double
 
@@ -46,7 +50,11 @@ s *| v = (*s) <$> v
 dot v0 v1 = sum $ v0 * v1
 normalize v = (1/norm v) *| v
 
-xzPrj v = v * (Vec3 1 0 1)
+xzPrj v = let 
+            (Vec3 x _ z) = location v 
+          in 
+             Vec3 x 0 z
+
 xyPrj v = v * (Vec3 1 1 0)
 
 instance Functor Vec3 where
@@ -253,7 +261,7 @@ instance Character Ball where
     location (Ball l _) = l
 
 instance Character (Vec3 Double) where
-    radius v = norm v
+    radius   = norm
     location = id
 
 instance Character IPlayer where
@@ -377,3 +385,5 @@ takeList (i:ixs) (x:xs)
    | True   = takeList (i-1:ixs) xs 
 
 fst3 (a,_,_) = a
+
+showColumn = foldMap $ (++"\n") . show

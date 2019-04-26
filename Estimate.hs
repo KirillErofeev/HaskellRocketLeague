@@ -32,37 +32,54 @@ estimate game iAm enemy = estimate' game iAm enemy + cor where
     def = Vec3 0 0 (-40)
     minDefDistance = 0
 
-freeKickEstimate dt (EnemyPlayer (Player e0 e1)) ball bot = --trace ("\n" ++ show (location bot)) $ 
-   isScoredPts + isAutogoalPts + isKickPts where
-      isScoredPts | isScored ball  = 1e3 + saveDif ball
+freeKickEstimate dt (EnemyPlayer (Player e0 e1)) ball bot = --trace (show "isKickPts: " ++ show isKickPts) $ 
+   isScoredPts + isAutogoalPts + isKickPts + posPts + touchPunish + scoredPosition where
+      posPts | diffZBall < 0 = diffZBall*100
+             | otherwise = 0
+      diffZBall = z (location ball) - z (location bot)
+      isScoredPts | isScored ball  = 1e5 + saveDif ball
                   | otherwise      = 0
       isScored b = z (location b) > arenaDepth/2 + ballRadius
       
-      isAutogoalPts | isAutogoal = -1e3
+      isAutogoalPts | isAutogoal = -1e5
                     | otherwise  = 0
       isAutogoal = z (location ball) <= -arenaDepth/2 - ballRadius 
 
-      saveDif b = foldr1 min $ distance (location b) . location <$> [e0, e1] 
+      saveDif b = negate $ foldr1 min $ distance (location b) . location <$> [e0, e1] 
 
-      isKick = z (velocity ball) > 20 
-      isKickPts | isKick && isPrbScored = 100 + prbSaveDif
-                | isKick                = -100
-                | otherwise = - distCurveBall 
+      ballBotXZDist = distance (xzPrj $ location ball) (xzPrj $ location ball)
+      ballBotYDist  = abs $ (y $ location ball) - (y $ location bot)
+      isKick = ballBotXZDist < 3.1 && ballBotYDist < 2
+      isKickPts | isKick && isPrbScored =  100  + prbSaveDif
+                | isKick                = (0)
+                | otherwise = -distCurveBall*10
 
       distCurveBall = (fst3 . head) $ dropWhile final $
          iterate iterator (distance ball bot, 0, ball)
-      final (distCB, t, ball) = distCB > t*27 && t < 1.3
-      iterator (distCB, t, ball) = (min distCB (distance ball' bot), t+dt, ball')
-
-      ball' = simpleFreeBallPredict ball dt
+      final (distCB, t, ball) = distCB > 3.3 && t < 3*dt
+      iterator (distCB, t, ball) = (min distCB (distance (xzPrj ball') (xzPrj bot)), t+dt, ball')
 
       canBeScored = head $ dropWhile kickFinal $
          iterate kickIterator (0, ball)
-      kickFinal (t, ball) = not (isScored ball) && t < 2
+      kickFinal (t, ball) = not (isScored ball) && t < 1
       kickIterator (t, ball) = (t+dt, ball')
+      ball' = simpleFreeBallPredict ball dt
 
       isPrbScored = isScored $ snd canBeScored
       prbSaveDif  = saveDif  $ snd canBeScored
+
+      touchPunish | isTouch . botTouch $ bot = 0
+                  | otherwise                = -15
+      
+      scoredPosition
+                     | tBall <= 0       = -100.0
+                     | onScoredPosition = 30 - ((abs $ botToBallX*tBall - botX) - 13.5)
+                     | otherwise        = negate ((abs $ botToBallX*tBall - botX) - 13.5)
+      onScoredPosition = (abs $ botToBallX*tBall - botX) < 13.5
+      tBall = (40-botZ)/botToBallZ
+      Vec3 botX  _ botZ  = location bot
+      Vec3 ballX _ ballZ = location ball
+      (botToBallX, botToBallZ) = (ballX - botX, ballZ - botZ)
 
 
 uncurry3 f (a,b,c) = f a b c
